@@ -73,15 +73,29 @@ def parse_leaderboard(html: str) -> List[List[str]]:
     
     # Initialize result list
     result = []
-    
+
     # Extract headers from thead
     thead = table.find('thead')
     if thead:
-        header_row = thead.find('tr')
-        if header_row:
-            headers = [th.get_text(strip=True) for th in header_row.find_all(['th', 'td'])]
-            result.append(headers)
-    
+        header_rows = thead.find_all('tr')
+        logger.debug(f"Found {len(header_rows)} header rows in thead")
+        if header_rows:
+            header_texts = []
+            best_idx = 0
+            best_nonempty = -1
+            for idx, row in enumerate(header_rows):
+                cols = [th.get_text(" ", strip=True) for th in row.find_all(['th', 'td'])]
+                header_texts.append(cols)
+                nonempty = sum(1 for c in cols if c and c.strip())
+                logger.debug(f"Header row #{idx}: {cols} (non-empty: {nonempty})")
+                # Prefer row with most non-empty headers; on tie, pick later row
+                if nonempty > best_nonempty or (nonempty == best_nonempty and idx > best_idx):
+                    best_nonempty = nonempty
+                    best_idx = idx
+            chosen_headers = header_texts[best_idx]
+            logger.info(f"Selected thead header row #{best_idx} with {best_nonempty} non-empty headers: {chosen_headers}")
+            result.append(chosen_headers)
+
     # Extract data rows from tbody
     tbody = table.find('tbody')
     if tbody:
@@ -92,6 +106,6 @@ def parse_leaderboard(html: str) -> List[List[str]]:
             # Only add non-empty rows
             if cell_data:
                 result.append(cell_data)
-    
+
     logger.info(f"Finished parsing leaderboard. Found {len(result)} rows (including headers)")
     return result

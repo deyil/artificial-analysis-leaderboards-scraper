@@ -18,13 +18,15 @@ from typing import Optional
 from playwright.sync_api import sync_playwright
 
 
-def fetch_html_with_playwright(url: str) -> Optional[str]:
+def fetch_html_with_playwright(url: str, click_header_buttons: bool = True) -> Optional[str]:
     """
     Fetch HTML content from a given URL using Playwright to render JavaScript.
-    
+
     Args:
         url (str): The URL to fetch HTML content from
-        
+        click_header_buttons (bool): If True, attempt to click all buttons found in thead elements
+                                    first <tr> to expand column headers before extracting HTML.
+
     Returns:
         Optional[str]: HTML content as string if successful, None otherwise
     """
@@ -35,6 +37,30 @@ def fetch_html_with_playwright(url: str) -> Optional[str]:
             page = browser.new_page()
             page.goto(url)
             # Wait for the page to load completely
+            page.wait_for_load_state('networkidle')
+
+            if click_header_buttons:
+                try:
+                    header_buttons = page.locator('thead tr:first-of-type button')
+                    btn_count = header_buttons.count()
+                    logger.info(f"Found {btn_count} header buttons in thead; attempting to click them")
+                    for i in range(btn_count):
+                        btn = header_buttons.nth(i)
+                        try:
+                            # Only click if visible/enabled
+                            if btn.is_visible() and btn.is_enabled():
+                                btn.click()
+                                logger.debug(f"Clicked header button #{i}")
+                                # Small wait to allow DOM updates to settle
+                                page.wait_for_timeout(200)
+                            else:
+                                logger.debug(f"Skipping header button #{i} (not visible or not enabled)")
+                        except Exception as click_exc:
+                            logger.warning(f"Error clicking header button #{i}: {click_exc}")
+                except Exception as e:
+                    logger.warning(f"Failed to locate or click header buttons: {e}")
+
+            # Give the page a brief moment to update after clicks
             page.wait_for_load_state('networkidle')
             html = page.content()
             browser.close()
