@@ -16,6 +16,41 @@ Key Features:
 from bs4 import BeautifulSoup
 import logging
 from typing import List
+import os
+
+
+def extract_provider_name(cell) -> str:
+    """
+    Extract provider name from the first cell of a table row.
+    
+    Args:
+        cell: BeautifulSoup element representing the first cell of a table row
+        
+    Returns:
+        str: Provider name extracted from the cell
+    """
+    # Look for img element in the cell
+    img = cell.find('img')
+    if img:
+        # Prefer alt attribute if it exists and is not empty
+        alt_text = img.get('alt', '').strip()
+        if alt_text:
+            # Remove " logo" suffix if present
+            if alt_text.lower().endswith(' logo'):
+                return alt_text[:-5].strip()
+            return alt_text
+        
+        # Fall back to src attribute filename without extension
+        src = img.get('src', '').strip()
+        if src:
+            # Get basename (filename) from path
+            filename = os.path.basename(src)
+            # Remove file extension
+            name_without_ext = os.path.splitext(filename)[0]
+            return name_without_ext
+    
+    # If no img or no usable attributes, return empty string
+    return ''
 
 
 def parse_leaderboard(html: str) -> List[List[str]]:
@@ -102,7 +137,14 @@ def parse_leaderboard(html: str) -> List[List[str]]:
         rows = tbody.find_all('tr')
         for row in rows:
             # Extract cell data from each row
-            cell_data = [td.get_text(strip=True) for td in row.find_all(['td', 'th'])]
+            cells = row.find_all(['td', 'th'])
+            cell_data = []
+            for idx, cell in enumerate(cells):
+                if idx == 0:  # First cell contains provider logo
+                    provider_name = extract_provider_name(cell)
+                    cell_data.append(provider_name)
+                else:
+                    cell_data.append(cell.get_text(strip=True))
             # Only add non-empty rows
             if cell_data:
                 result.append(cell_data)

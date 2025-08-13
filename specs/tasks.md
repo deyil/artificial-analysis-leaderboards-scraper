@@ -38,3 +38,12 @@
 - [x] Update content with main script error information
 - [x] Mirror the checklist from the TODO list
 - [x] Write updated content back to specs/tasks.md
+
+
+# Mirrored TODO checklist
+
+- [x] Review current parser and scraper code to locate provider extraction logic in [`src/components/parser.py`](src/components/parser.py:1) and [`src/components/scraper.py`](src/components/scraper.py:1)
+- [x] Implement provider name extraction so the scraper uses the image <img> alt text if present, otherwise falls back to the image filename (without extension) when populating the "API Provider" CSV column
+- [x] Update CSV writer (if separate) to populate the "API Provider" column with the extracted provider name
+- [x] Run the test suite and fix any failing tests related to parsing/formatting
+- [-] Mirror this checklist into [`specs/tasks.md`](specs/tasks.md:1)
