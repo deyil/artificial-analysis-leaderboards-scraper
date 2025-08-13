@@ -29,11 +29,38 @@ def parse_leaderboard(html: str) -> List[List[str]]:
         List[List[str]]: A list of lists where the first inner list contains headers
                          and subsequent inner lists contain data for each row
     """
-    logger = logging.getLogger(__name__)
+    logger = logging.getLogger('web_scraper')
     logger.info("Starting to parse leaderboard HTML")
+    
+    # Diagnostic logging
+    logger.debug(f"HTML Length: {len(html)}")
+    # Log a snippet of the HTML content (first 500 characters)
+    snippet = html[:500]
+    logger.debug(f"HTML Snippet: {snippet}")
     
     # Parse the HTML content
     soup = BeautifulSoup(html, 'html.parser')
+    
+    # Diagnostic logging for HTML structure
+    table_count = len(soup.find_all('table'))
+    iframe_count = len(soup.find_all('iframe'))
+    role_table_count = len(soup.find_all(attrs={"role": "table"}))
+    logger.debug(f"Table Count: {table_count}, Iframe Count: {iframe_count}, Role Table Count: {role_table_count}")
+    
+    # Try to parse Next.js embedded JSON
+    next_data_script = soup.find('script', {'id': '__NEXT_DATA__'})
+    if next_data_script and next_data_script.string:
+        try:
+            import json
+            next_data = json.loads(next_data_script.string)
+            # Extract leaderboard data from next_data
+            # This will depend on the specific structure of the JSON
+            logger.debug("Found Next.js embedded JSON")
+            # TODO: Implement actual JSON parsing logic here
+        except json.JSONDecodeError as e:
+            logger.warning(f"Failed to parse Next.js embedded JSON: {e}")
+    else:
+        logger.debug("Next.js embedded JSON script tag not found or empty")
     
     # Find the main leaderboard table
     # Based on the architecture document, we're looking for a table structure
