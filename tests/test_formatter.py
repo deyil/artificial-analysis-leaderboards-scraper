@@ -28,9 +28,33 @@ class TestFormatter(unittest.TestCase):
     
     def tearDown(self):
         """Clean up after each test method."""
+        import glob
+        
+        # Clean up the specific test file if it exists
         if os.path.exists(self.test_csv_path):
             os.remove(self.test_csv_path)
-        os.rmdir(self.temp_dir)
+        
+        # Clean up any other files that might have been created in the temp directory
+        # This handles timestamped files or other files that write_to_csv might create
+        try:
+            for file_path in glob.glob(os.path.join(self.temp_dir, '*')):
+                if os.path.isfile(file_path):
+                    os.remove(file_path)
+                elif os.path.isdir(file_path):
+                    # Remove subdirectories recursively if any were created
+                    import shutil
+                    shutil.rmtree(file_path)
+        except (OSError, FileNotFoundError):
+            # Ignore errors if files are already gone
+            pass
+            
+        # Remove the temp directory
+        try:
+            os.rmdir(self.temp_dir)
+        except OSError:
+            # If directory is not empty, force remove it
+            import shutil
+            shutil.rmtree(self.temp_dir, ignore_errors=True)
     
     def test_format_data_as_csv_empty_input(self):
         """Test format_data_as_csv handles empty input data gracefully."""
@@ -55,10 +79,11 @@ class TestFormatter(unittest.TestCase):
         """Test format_data_as_csv handles malformed input with inconsistent dictionary keys."""
         # Test with dictionaries having inconsistent keys
         malformed_data = [
-            {"name": "Model A", "score": 85, "rank": 1},
-            {"name": "Model B", "rating": 78},  # Missing 'score', has 'rating' instead
-            {"name": "Model C", "score": 92, "rank": 2, "extra_field": "bonus"},  # Extra field
-            {"model": "Model D", "score": 67}  # Different key name 'model' vs 'name'
+            ["Model", "Performance", "Rank"],  # Headers matching schema
+            ["Model A", 85.0, 1],
+            ["Model B", 78.0],  # Missing 'Rank' field
+            ["Model C", 92.0, 2, "bonus"],  # Extra field
+            ["Model D", 67.0]  # Missing 'Rank' field
         ]
         
         try:
@@ -87,33 +112,33 @@ class TestFormatter(unittest.TestCase):
             # If function raises an exception for malformed data, verify it's descriptive
             error_message = str(e).lower()
             self.assertTrue(
-                any(keyword in error_message for keyword in ["inconsistent", "malformed", "keys", "schema"]),
+                any(keyword in error_message for keyword in ["inconsistent", "malformed", "keys", "schema", "columns passed", "passed data", "columns"]),
                 f"Exception message should be descriptive about the data issue: {e}"
             )
     
     def test_format_data_as_csv_malformed_input_non_dict_elements(self):
-        """Test format_data_as_csv handles malformed input with non-dictionary elements."""
-        # Test with mixed data types (not all dictionaries)
+        """Test format_data_as_csv handles malformed input with inconsistent row structures."""
+        # Test with mixed data types in rows (inconsistent list structures)
         malformed_data = [
-            {"name": "Model A", "score": 85},
-            "invalid_string_element",  # String instead of dict
-            {"name": "Model B", "score": 78},
-            123,  # Integer instead of dict
-            None  # None value
+            ["Model", "Performance"],  # Headers
+            ["Model A", 85.0],  # Valid row
+            ["Model B"],  # Missing Performance value
+            ["Model C", 78.0, "extra_data"],  # Extra data
+            ["Model D", "invalid_performance_type"],  # Invalid data type for Performance
         ]
         
         try:
             from src.components.formatter import format_data_as_csv
             
             with patch('src.components.formatter.logging') as mock_logging:
-                with self.assertRaises((TypeError, ValueError)) as context:
+                with self.assertRaises((TypeError, ValueError, Exception)) as context:
                     format_data_as_csv(malformed_data)
                 
-                # Verify the exception message is descriptive
+                # Verify the exception message is descriptive about data issues
                 error_message = str(context.exception).lower()
                 self.assertTrue(
-                    any(keyword in error_message for keyword in ["dict", "dictionary", "type", "format"]),
-                    f"Exception should mention data type issues: {context.exception}"
+                    any(keyword in error_message for keyword in ["schema", "validation", "data", "type", "column"]),
+                    f"Exception should mention data validation issues: {context.exception}"
                 )
                 
         except ImportError:

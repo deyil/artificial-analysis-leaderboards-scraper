@@ -67,22 +67,9 @@ def parse_leaderboard(html: str) -> List[List[str]]:
     logger = logging.getLogger('web_scraper')
     logger.info("Starting to parse leaderboard HTML")
     
-    # Diagnostic logging
-    logger.debug(f"HTML Length: {len(html)}")
-    # Log a snippet of the HTML content (first 500 characters)
-    snippet = html[:500]
-    logger.debug(f"HTML Snippet: {snippet}")
-    
-    # Parse the HTML content
+    # Try to parse Next.js embedded JSON
     soup = BeautifulSoup(html, 'html.parser')
     
-    # Diagnostic logging for HTML structure
-    table_count = len(soup.find_all('table'))
-    iframe_count = len(soup.find_all('iframe'))
-    role_table_count = len(soup.find_all(attrs={"role": "table"}))
-    logger.debug(f"Table Count: {table_count}, Iframe Count: {iframe_count}, Role Table Count: {role_table_count}")
-    
-    # Try to parse Next.js embedded JSON
     next_data_script = soup.find('script', {'id': '__NEXT_DATA__'})
     if next_data_script and next_data_script.string:
         try:
@@ -155,12 +142,13 @@ def parse_leaderboard(html: str) -> List[List[str]]:
             headers_found = True
 
     # Step 3: Fallback if no headers found in thead
+    header_row_index = None  # Track which row index was used as headers
     if not headers_found:
         # Look for the first non-empty row in tbody
         tbody = table.find('tbody')
         if tbody:
             rows = tbody.find_all('tr')
-            for row in rows:
+            for row_idx, row in enumerate(rows):
                 cells = row.find_all(['td', 'th'])
                 cell_data = []
                 for idx, cell in enumerate(cells):
@@ -170,7 +158,7 @@ def parse_leaderboard(html: str) -> List[List[str]]:
                     else:
                         cell_data.append(cell.get_text(strip=True))
                 
-                # If we found a non-empty row, use it as headers and generate safe column names
+                # If we found a row with meaningful content, use it as headers and generate safe column names
                 if cell_data and any(cell_data):
                     # Generate safe placeholder column names
                     headers = []
@@ -180,6 +168,7 @@ def parse_leaderboard(html: str) -> List[List[str]]:
                         else:
                             headers.append(f'column_{i+1}')
                     result.append(headers)
+                    header_row_index = row_idx  # Remember which row we used as headers
                     logger.info(f"Used first non-empty row as headers: {headers}")
                     headers_found = True
                     break
@@ -188,7 +177,11 @@ def parse_leaderboard(html: str) -> List[List[str]]:
     tbody = table.find('tbody')
     if tbody:
         rows = tbody.find_all('tr')
-        for row in rows:
+        for row_idx, row in enumerate(rows):
+            # Skip the row that was used as headers
+            if header_row_index is not None and row_idx == header_row_index:
+                continue
+                
             # Extract cell data from each row
             cells = row.find_all(['td', 'th'])
             cell_data = []
@@ -198,11 +191,10 @@ def parse_leaderboard(html: str) -> List[List[str]]:
                     cell_data.append(provider_name)
                 else:
                     cell_data.append(cell.get_text(strip=True))
-            # Only add non-empty rows
-            if cell_data:
-                # Skip the row if it was used as headers
-                if not headers_found or cell_data != result[0]:
-                    result.append(cell_data)
+            
+            # Only add rows that have meaningful content (not all empty cells)
+            if cell_data and any(cell_data):
+                result.append(cell_data)
 
     logger.info(f"Finished parsing leaderboard. Found {len(result)} rows (including headers)")
     return result
