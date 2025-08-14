@@ -3,3 +3,4 @@ beautifulsoup4==4.13.4
 PyYAML==6.0.2
 playwright==1.40.0
 pandera==0.18.1
+pandas==2.2.2
