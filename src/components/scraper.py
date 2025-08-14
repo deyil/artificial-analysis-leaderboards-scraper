@@ -16,7 +16,16 @@ import time
 import logging
 from typing import Optional
 from playwright.sync_api import sync_playwright
+import random
 
+# List of common User-Agent strings
+USER_AGENTS = [
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
+    "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:89.0) Gecko/20100101 Firefox/89.0",
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:89.0) Gecko/20100101 Firefox/89.0"
+]
 
 def fetch_html_with_playwright(url: str, click_header_buttons: bool = True) -> Optional[str]:
     """
@@ -35,6 +44,10 @@ def fetch_html_with_playwright(url: str, click_header_buttons: bool = True) -> O
         with sync_playwright() as p:
             browser = p.chromium.launch(headless=True)
             page = browser.new_page()
+            # Set a random User-Agent for Playwright
+            page.set_extra_http_headers({
+                "User-Agent": random.choice(USER_AGENTS)
+            })
             page.goto(url)
             # Wait for the page to load completely
             page.wait_for_load_state('networkidle')
@@ -88,8 +101,18 @@ def fetch_html(url: str, retries: int = 3, delay: int = 5) -> Optional[str]:
     
     for attempt in range(retries + 1):
         try:
-            # Make a GET request with a timeout
-            response = requests.get(url, timeout=30)
+            # Implement rate-limiting with exponential backoff before making request
+            # Delay is not applied on first attempt (attempt = 0)
+            min_delay = 1  # Minimum delay of 1 second
+            time.sleep(max(min_delay, delay * (2 ** (attempt-1))) if attempt > 0 else 0)
+            
+            # Randomly select a User-Agent from the list
+            headers = {
+                "User-Agent": random.choice(USER_AGENTS)
+            }
+            
+            # Make a GET request with a timeout and custom headers
+            response = requests.get(url, timeout=30, headers=headers)
             # Raise an exception for bad status codes
             response.raise_for_status()
             # Log success

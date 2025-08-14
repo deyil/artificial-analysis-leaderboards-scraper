@@ -1,0 +1,5 @@
+# Example configuration file
+# Copy this file to config.yaml and update with your actual values: cp config.example.yaml config.yaml
+
+target_url: "https://example.com/leaderboards/providers/prompt-options/single/medium_coding?deprecation=all"
+output_csv_path: "data/example_leaderboard.csv"

@@ -120,3 +120,180 @@ def test_parse_leaderboard_with_sample_row():
     # Check that other cells are extracted correctly
     assert result[0][1] == "gpt-oss-120B (high)"
     assert result[0][2] == "131k"
+
+def test_parse_leaderboard_with_thead_and_known_labels():
+    """Test parsing with thead containing known header labels."""
+    html = '''
+    <table>
+        <thead>
+            <tr>
+                <th>Rank</th>
+                <th>Model</th>
+                <th>Performance</th>
+                <th>Score</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><img alt="Fireworks logo" src="/img/logos/fireworks.svg"></td>
+                <td>Model A</td>
+                <td>High</td>
+                <td>95</td>
+            </tr>
+        </tbody>
+    </table>
+    '''
+    
+    result = parse_leaderboard(html)
+    
+    # Should have headers and one data row
+    assert len(result) == 2
+    # Check headers were selected correctly
+    assert result[0] == ["Rank", "Model", "Performance", "Score"]
+    # Check data row
+    assert result[1][0] == "Fireworks"
+    assert result[1][1] == "Model A"
+
+def test_parse_leaderboard_with_thead_no_labels_best_quality():
+    """Test parsing with thead containing no known labels but best quality row."""
+    html = '''
+    <table>
+        <thead>
+            <tr>
+                <th></th>
+                <th></th>
+                <th></th>
+            </tr>
+            <tr>
+                <th>Model</th>
+                <th>Perf</th>
+                <th>Score</th>
+            </tr>
+            <tr>
+                <th>Model</th>
+                <th>Performance</th>
+                <th>Score</th>
+                <th>Extra</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><img alt="Fireworks logo" src="/img/logos/fireworks.svg"></td>
+                <td>Model A</td>
+                <td>High</td>
+                <td>95</td>
+                <td>Extra Data</td>
+            </tr>
+        </tbody>
+    </table>
+    '''
+    
+    result = parse_leaderboard(html)
+    
+    # Should have headers and one data row
+    assert len(result) == 2
+    # The third row has more unique non-empty headers and should be chosen
+    assert result[0] == ["Model", "Performance", "Score", "Extra"]
+    # Check data row
+    assert result[1][0] == "Fireworks"
+    assert result[1][1] == "Model A"
+
+def test_parse_leaderboard_no_thead_fallback():
+    """Test parsing with no thead, using first non-empty row as headers."""
+    html = '''
+    <table>
+        <tbody>
+            <tr>
+                <td><img alt="Provider" src="/img/logos/provider.svg"></td>
+                <td>Model Name</td>
+                <td>Performance</td>
+                <td>Score</td>
+            </tr>
+            <tr>
+                <td><img alt="Fireworks" src="/img/logos/fireworks.svg"></td>
+                <td>Model A</td>
+                <td>High</td>
+                <td>95</td>
+            </tr>
+        </tbody>
+    </table>
+    '''
+    
+    result = parse_leaderboard(html)
+    
+    # Should have headers (from first row) and one data row
+    assert len(result) == 2
+    # First row should be used as headers
+    assert result[0] == ["Provider", "Model Name", "Performance", "Score"]
+    # Second row should be data
+    assert result[1][0] == "Fireworks"
+    assert result[1][1] == "Model A"
+
+def test_parse_leaderboard_no_thead_empty_first_row_fallback():
+    """Test parsing with no thead and empty first row, using first non-empty row as headers."""
+    html = '''
+    <table>
+        <tbody>
+            <tr>
+                <td></td>
+                <td></td>
+                <td></td>
+            </tr>
+            <tr>
+                <td><img alt="Provider" src="/img/logos/provider.svg"></td>
+                <td>Model Name</td>
+                <td>Performance</td>
+                <td>Score</td>
+            </tr>
+            <tr>
+                <td><img alt="Fireworks" src="/img/logos/fireworks.svg"></td>
+                <td>Model A</td>
+                <td>High</td>
+                <td>95</td>
+            </tr>
+        </tbody>
+    </table>
+    '''
+    
+    result = parse_leaderboard(html)
+    
+    # Should have headers (from second row) and one data row
+    assert len(result) == 2
+    # Second row should be used as headers
+    assert result[0] == ["Provider", "Model Name", "Performance", "Score"]
+    # Third row should be data
+    assert result[1][0] == "Fireworks"
+    assert result[1][1] == "Model A"
+
+def test_parse_leaderboard_no_headers_generate_placeholders():
+    """Test parsing with no clear headers, generating placeholder column names."""
+    html = '''
+    <table>
+        <tbody>
+            <tr>
+                <td><img alt="Fireworks" src="/img/logos/fireworks.svg"></td>
+                <td>Data1</td>
+                <td></td>
+                <td>Data3</td>
+            </tr>
+            <tr>
+                <td><img alt="OpenAI" src="/img/logos/openai.svg"></td>
+                <td>Value1</td>
+                <td>Value2</td>
+                <td>Value3</td>
+            </tr>
+        </tbody>
+    </table>
+    '''
+    
+    result = parse_leaderboard(html)
+    
+    # Should have headers (generated) and one data row
+    assert len(result) == 2
+    # Headers should include placeholder for empty cell
+    assert result[0] == ["Fireworks", "Data1", "column_3", "Data3"]
+    # Data row
+    assert result[1][0] == "OpenAI"
+    assert result[1][1] == "Value1"
+    assert result[1][2] == "Value2"
+

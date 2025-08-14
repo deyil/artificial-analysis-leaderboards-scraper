@@ -111,25 +111,78 @@ def parse_leaderboard(html: str) -> List[List[str]]:
 
     # Extract headers from thead
     thead = table.find('thead')
+    headers_found = False
     if thead:
         header_rows = thead.find_all('tr')
         logger.debug(f"Found {len(header_rows)} header rows in thead")
         if header_rows:
             header_texts = []
-            best_idx = 0
-            best_nonempty = -1
             for idx, row in enumerate(header_rows):
                 cols = [th.get_text(" ", strip=True) for th in row.find_all(['th', 'td'])]
                 header_texts.append(cols)
-                nonempty = sum(1 for c in cols if c and c.strip())
-                logger.debug(f"Header row #{idx}: {cols} (non-empty: {nonempty})")
-                # Prefer row with most non-empty headers; on tie, pick later row
-                if nonempty > best_nonempty or (nonempty == best_nonempty and idx > best_idx):
-                    best_nonempty = nonempty
+
+            # Step 1: Look for explicitly labeled headers (case-insensitive)
+            known_header_patterns = ['model', 'performance', 'score', 'rank', 'provider', 'name', 'accuracy']
+            best_idx = -1
+            best_score = -1
+            
+            for idx, headers in enumerate(header_texts):
+                # Convert headers to lowercase for comparison
+                lower_headers = [h.lower() for h in headers if h]
+                # Count how many known patterns are present
+                score = sum(1 for pattern in known_header_patterns if any(pattern in header for header in lower_headers))
+                if score > best_score:
+                    best_score = score
                     best_idx = idx
+
+            # Step 2: If no good match found, choose row with fewest empty cells and most unique non-empty headers
+            if best_idx == -1:
+                best_idx = 0
+                best_quality = -1
+                for idx, headers in enumerate(header_texts):
+                    non_empty_count = sum(1 for h in headers if h and h.strip())
+                    unique_count = len(set(h.lower() for h in headers if h and h.strip()))
+                    empty_count = len(headers) - non_empty_count
+                    # Quality score: prioritize more unique non-empty headers and fewer empty cells
+                    quality = unique_count - empty_count
+                    if quality > best_quality:
+                        best_quality = quality
+                        best_idx = idx
+
             chosen_headers = header_texts[best_idx]
-            logger.info(f"Selected thead header row #{best_idx} with {best_nonempty} non-empty headers: {chosen_headers}")
+            logger.info(f"Selected thead header row #{best_idx} with quality score: {best_score if best_score > -1 else best_quality}. Headers: {chosen_headers}")
             result.append(chosen_headers)
+            headers_found = True
+
+    # Step 3: Fallback if no headers found in thead
+    if not headers_found:
+        # Look for the first non-empty row in tbody
+        tbody = table.find('tbody')
+        if tbody:
+            rows = tbody.find_all('tr')
+            for row in rows:
+                cells = row.find_all(['td', 'th'])
+                cell_data = []
+                for idx, cell in enumerate(cells):
+                    if idx == 0:  # First cell contains provider logo
+                        provider_name = extract_provider_name(cell)
+                        cell_data.append(provider_name)
+                    else:
+                        cell_data.append(cell.get_text(strip=True))
+                
+                # If we found a non-empty row, use it as headers and generate safe column names
+                if cell_data and any(cell_data):
+                    # Generate safe placeholder column names
+                    headers = []
+                    for i, cell in enumerate(cell_data):
+                        if cell.strip():
+                            headers.append(cell.strip())
+                        else:
+                            headers.append(f'column_{i+1}')
+                    result.append(headers)
+                    logger.info(f"Used first non-empty row as headers: {headers}")
+                    headers_found = True
+                    break
 
     # Extract data rows from tbody
     tbody = table.find('tbody')
@@ -147,7 +200,9 @@ def parse_leaderboard(html: str) -> List[List[str]]:
                     cell_data.append(cell.get_text(strip=True))
             # Only add non-empty rows
             if cell_data:
-                result.append(cell_data)
+                # Skip the row if it was used as headers
+                if not headers_found or cell_data != result[0]:
+                    result.append(cell_data)
 
     logger.info(f"Finished parsing leaderboard. Found {len(result)} rows (including headers)")
     return result
