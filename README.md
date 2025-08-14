@@ -102,6 +102,7 @@ Parses HTML content and extracts structured data:
 Formats extracted data and outputs to CSV:
 - Writes data to CSV files with proper error handling
 - Handles data validation
+- Appends timestamp to output filenames in format _YYYYMMDD_HHMMSS
 
 ### Config (`src/components/config.py`)
 Manages application configuration:
