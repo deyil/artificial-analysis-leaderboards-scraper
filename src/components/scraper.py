@@ -86,8 +86,7 @@ def fetch_html_with_playwright(url: str, click_header_buttons: bool = True) -> O
 
 def fetch_html(url: str, retries: int = 3, delay: int = 5) -> Optional[str]:
     """
-    Fetch HTML content from a given URL with retry mechanism.
-    First tries with requests, then falls back to Playwright if no table is found.
+    Fetch HTML content from a given URL using Playwright as the primary method.
     
     Args:
         url (str): The URL to fetch HTML content from
@@ -100,41 +99,19 @@ def fetch_html(url: str, retries: int = 3, delay: int = 5) -> Optional[str]:
     logger = logging.getLogger('web_scraper')
     
     for attempt in range(retries + 1):
-        try:
-            # Implement rate-limiting with exponential backoff before making request
-            # Delay is not applied on first attempt (attempt = 0)
-            min_delay = 1  # Minimum delay of 1 second
-            time.sleep(max(min_delay, delay * (2 ** (attempt-1))) if attempt > 0 else 0)
-            
-            # Randomly select a User-Agent from the list
-            headers = {
-                "User-Agent": random.choice(USER_AGENTS)
-            }
-            
-            # Make a GET request with a timeout and custom headers
-            response = requests.get(url, timeout=30, headers=headers)
-            # Raise an exception for bad status codes
-            response.raise_for_status()
-            # Log success
-            logger.info(f"Successfully fetched HTML from {url}")
-            # Diagnostic logging
-            logger.debug(f"HTTP Response - Status: {response.status_code}, URL: {response.url}")
-            logger.debug(f"HTTP Response - Content-Type: {response.headers.get('content-type')}")
-            logger.debug(f"HTTP Response - Content Length: {len(response.text)}")
-            # Log a snippet of the response content (first 1000 characters)
-            snippet = response.text[:1000]
-            logger.debug(f"HTTP Response - Content Snippet: {snippet}")
-            # Return the HTML content
-            return response.text
-        except requests.exceptions.RequestException as e:
-            # Handle any request-related exceptions
-            if attempt < retries:
-                # Calculate exponential backoff delay
-                backoff_delay = delay * (2 ** attempt)
-                logger.warning(f"Attempt {attempt + 1} failed fetching HTML from {url}: {e}. Retrying in {backoff_delay} seconds...")
-                time.sleep(backoff_delay)
-            else:
-                logger.error(f"Failed to fetch HTML from {url} after {retries + 1} attempts: {e}")
-                # Try Playwright fallback
-                logger.info("Falling back to Playwright to render the page")
-                return fetch_html_with_playwright(url)
+        # Implement rate-limiting with exponential backoff
+        if attempt > 0:
+            min_delay = 1
+            time.sleep(max(min_delay, delay * (2 ** (attempt-1))))
+        
+        html = fetch_html_with_playwright(url)
+        if html is not None:
+            return html
+        
+        if attempt < retries:
+            backoff_delay = delay * (2 ** attempt)
+            logger.warning(f"Attempt {attempt + 1} failed fetching HTML from {url} with Playwright. Retrying in {backoff_delay} seconds...")
+            time.sleep(backoff_delay)
+        else:
+            logger.error(f"Failed to fetch HTML from {url} after {retries + 1} attempts with Playwright")
+            return None

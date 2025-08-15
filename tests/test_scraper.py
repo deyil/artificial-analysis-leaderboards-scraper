@@ -1,23 +1,18 @@
 from unittest.mock import patch
-import requests
 from src.components.scraper import fetch_html
 
-def test_playwright_fallback():
+def test_playwright_retries():
     """
-    Test that fetch_html falls back to Playwright when requests fails with RequestException.
+    Test that fetch_html retries correctly when Playwright fails.
     """
-    # Mock requests.get to raise a RequestException
-    with patch('requests.get', side_effect=requests.exceptions.RequestException("Network error")):
-        # Mock the Playwright fallback function to return a simple HTML string
-        with patch('src.components.scraper.fetch_html_with_playwright') as mock_playwright:
-            mock_playwright.return_value = "<html><body>Fallback content</body></html>"
-            
-            # Call the function under test
-            result = fetch_html("https://example.com")
-            
-            # Assert that the Playwright fallback was called
-            mock_playwright.assert_called_once_with("https://example.com")
-            
-            # Assert that fetch_html returned the fallback content (not None)
-            assert result is not None
-            assert "Fallback content" in result
+    with patch('src.components.scraper.fetch_html_with_playwright', side_effect=[
+        None,  # First attempt fails
+        None,  # Second attempt fails
+        "<html><body>Success content</body></html>"  # Third attempt succeeds
+    ]) as mock_playwright:
+        result = fetch_html("https://example.com", retries=2, delay=0)
+        
+        # Should have tried 3 times (0, 1, 2)
+        assert mock_playwright.call_count == 3
+        assert result is not None
+        assert "Success content" in result
