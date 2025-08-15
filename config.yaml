@@ -1,5 +1,7 @@
-# WARNING: DO NOT COMMIT THIS FILE TO VERSION CONTROL
-# Create a local copy for development: cp config.example.yaml config.yaml
+# Configuration file
 
+# TheArtificial Analysis URL to scrape the leaderboard data from. In case of different leaderboard queries, just update this URL.
 target_url: "https://artificialanalysis.ai/leaderboards/providers/prompt-options/single/medium_coding?deprecation=all"
+
+# The path to save the scraped leaderboard data to.
 output_csv_path: "data/leaderboard.csv"
