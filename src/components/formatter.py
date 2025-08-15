@@ -16,7 +16,7 @@ Key Features:
 import csv
 import logging
 import pandas as pd
-import pandera as pa
+import pandera.pandas as pa
 from pandera.errors import SchemaError
 from typing import List, Any
 import os

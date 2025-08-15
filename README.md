@@ -129,11 +129,16 @@ The scraper implements comprehensive error handling:
 - Parsing errors: Graceful handling of malformed data
 - File I/O errors: Proper error reporting and handling
 
+## Terminal Process Indicator
+
+A terminal spinner has been added to provide real-time feedback during the Playwright rendering process. This feature uses the `rich` library to display a spinner in the terminal, indicating that the scraping process is in progress.
+
 ## Dependencies
 
 - requests: HTTP library for Python
 - beautifulsoup4: HTML parsing library
 - pyyaml: YAML parser and emitter for Python
+- rich: For displaying the terminal spinner
 
 ## License
 
