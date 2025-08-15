@@ -73,6 +73,9 @@ def main() -> None:
         logger.error("Output CSV path not found in configuration")
         return
     
+    # Diagnostic logging to trace filename path
+    logger.debug(f"Configured output_csv_path={output_path!r}, exists={os.path.exists(output_path)}, is_dir={os.path.isdir(output_path)}")
+    
     try:
         write_to_csv(leaderboard_data, output_path)
         logger.info("Leaderboard scraping process completed successfully")

@@ -153,7 +153,7 @@ class TestFormatter(unittest.TestCase):
             ["Model B", "78", "2"]
         ]
         
-        write_to_csv(test_data, self.test_csv_path)
+        write_to_csv(test_data, self.test_csv_path, add_timestamp=False)
         
         # Verify file was created and contains expected data
         self.assertTrue(os.path.exists(self.test_csv_path))
@@ -168,7 +168,7 @@ class TestFormatter(unittest.TestCase):
         empty_data = []
         
         # Should handle empty data without crashing
-        write_to_csv(empty_data, self.test_csv_path)
+        write_to_csv(empty_data, self.test_csv_path, add_timestamp=False)
         
         # File should be created but empty
         self.assertTrue(os.path.exists(self.test_csv_path))
