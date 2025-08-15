@@ -11,7 +11,6 @@ Key Features:
 - Handles HTTP errors (404, 500, timeout, etc.)
 """
 
-import requests
 import time
 import logging
 from typing import Optional

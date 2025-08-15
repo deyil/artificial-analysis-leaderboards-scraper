@@ -14,7 +14,7 @@ Tests include:
 import unittest
 import tempfile
 import os
-from unittest.mock import patch, mock_open
+from unittest.mock import patch
 from src.components.formatter import write_to_csv
 
 
