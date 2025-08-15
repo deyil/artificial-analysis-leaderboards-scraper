@@ -3,40 +3,36 @@
 A Python web scraper designed to extract leaderboard data from the [Artificial Analysis website](https://artificialanalysis.ai/leaderboards/providers/prompt-options/single/medium_coding?deprecation=all) and save it to a CSV file.
 
 ## Features
-
-- Extracts leaderboard data from Artificial Analysis website
-- Handles HTTP requests with retry mechanism and exponential backoff
-- Parses HTML content using Beautiful Soup 4
-- Outputs data to CSV format with proper error handling
+ 
+- Extracts leaderboard data from Artificial Analysis website, including dynamic content rendered by JavaScript using Playwright
+- Handles HTTP requests with retry mechanism and exponential backoff, and user-agent rotation
+- Parses HTML content using Beautiful Soup 4, including dynamic identification and extraction of table headers
+- Outputs data to CSV format with proper error handling and data validation using Pandera
 - Comprehensive logging for debugging and monitoring
-- Configurable through YAML configuration file
+- Configurable through YAML configuration file with environment variable overrides
 
 ## Project Structure
-
+ 
 ```
 artificialanalysis-scraper/
 ├── src/
-│   ├── __init__.py
-│   ├── scraper.py          # Core HTTP request handling
-│   ├── parser.py           # HTML parsing and data extraction
-│   ├── formatter.py        # Data formatting and CSV output
-│   ├── config.py           # Configuration settings
-│   └── logger.py           # Logging configuration
+│   ├── main.py             # Entry point script
+│   ├── components/
+│   │   ├── config.py       # Configuration settings
+│   │   ├── formatter.py    # Data formatting and CSV output
+│   │   ├── logger.py       # Logging configuration
+│   │   ├── parser.py       # HTML parsing and data extraction
+│   │   └── scraper.py      # Core HTTP request handling
 ├── specs/
-│   ├── architecture.md     # Technical architecture document
-│   ├── requirements.md     # Project requirements
-│   └── tasks.md            # Implementation tasks
+│   └── architecture.md     # Technical architecture document
 ├── tests/
-│   ├── __init__.py
-│   ├── test_scraper.py
+│   ├── test_formatter.py
+│   ├── test_main.py
 │   ├── test_parser.py
-│   └── test_formatter.py
-├── data/
-│   └── output/             # CSV output directory
-├── logs/                   # Application logs
-├── main.py                 # Entry point script
-├── requirements.txt        # Python dependencies
+│   ├── test_scraper.py
+│   └── test_scraper_spinner.py
 ├── config.yaml             # Configuration file
+├── requirements.txt        # Python dependencies
 └── README.md               # Project documentation
 ```
 
@@ -85,34 +81,35 @@ output_csv_path: "data/leaderboard.csv"
 - `output_csv_path`: The path where the CSV output will be saved
 
 ## Components
-
+ 
 ### Scraper (`src/components/scraper.py`)
-Handles HTTP communication with the target website:
-- Makes GET requests to the leaderboard URL
-- Implements retry logic with exponential backoff
+Handles HTTP communication with the target website, specifically designed for dynamic content:
+- Makes GET requests to the leaderboard URL using Playwright for JavaScript rendering
+- Implements retry logic with exponential backoff and user-agent rotation
 - Handles HTTP errors and timeouts
-
+ 
 ### Parser (`src/components/parser.py`)
 Parses HTML content and extracts structured data:
 - Uses Beautiful Soup 4 for HTML parsing
-- Identifies and extracts table headers dynamically
-- Extracts data from table rows
-
+- Identifies and extracts table headers dynamically, including from complex table structures
+- Extracts data from table rows, including provider names from image alt text or filenames
+ 
 ### Formatter (`src/components/formatter.py`)
 Formats extracted data and outputs to CSV:
 - Writes data to CSV files with proper error handling
-- Handles data validation
-- Appends timestamp to output filenames in format _YYYYMMDD_HHMMSS
-
+- Validates data integrity using Pandera schemas
+- Appends timestamp to output filenames in format _YYYY-MM-DDTHH-MM-SS
+ 
 ### Config (`src/components/config.py`)
 Manages application configuration:
 - Loads configuration from YAML file
+- Provides default values and supports environment variable overrides
 - Validates configuration parameters
-
+ 
 ### Logger (`src/components/logger.py`)
 Configures and manages application logging:
 - Outputs to both console (DEBUG level) and file (INFO level)
-- Uses structured logging format
+- Uses standard logging format: `%(asctime)s - %(name)s - %(levelname)s - %(message)s`
 
 ## Logging
 
