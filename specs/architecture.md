@@ -36,11 +36,10 @@ artificialanalysis-scraper/
 **Responsibility:** Manages all HTTP communication with the target website.
 
 **Key Features:**
-- Handles GET requests to the leaderboard URL
+- Fetches HTML content from the leaderboard URL using Playwright for JavaScript rendering
 - Implements retry logic with exponential backoff
 - Manages request headers and user agent rotation
 - Handles HTTP errors (404, 500, timeout, etc.)
-- Supports session management for potential authentication
 - Implements rate limiting to respect website resources
 
 **Key Functions:**
@@ -144,10 +143,10 @@ graph TD
    - Set up output directories
 
 2. **Data Acquisition Phase:**
-   - Send HTTP request to leaderboard URL
-   - Handle potential redirects and errors
-   - Retrieve HTML content
-   - Log request metrics
+- Fetch HTML content from the leaderboard URL using Playwright
+- Handle potential redirects and errors
+- Retrieve HTML content
+- Log request metrics
 
 3. **Data Extraction Phase:**
    - Parse HTML using Beautiful Soup

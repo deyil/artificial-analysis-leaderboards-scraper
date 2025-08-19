@@ -1,13 +1,13 @@
 """
-HTTP request handler for the Artificial Analysis Leaderboard Scraper.
+HTML content fetcher for the Artificial Analysis Leaderboard Scraper.
 
-This module manages all HTTP communication with the target website,
-including GET requests, retry logic, rate limiting, and error handling.
+This module fetches HTML content from the target website using Playwright,
+handling retry logic, rate limiting, and error handling.
 
 Key Features:
-- Handles GET requests to the leaderboard URL
+- Fetches HTML content from the leaderboard URL using Playwright
 - Implements retry logic with exponential backoff
-- Manages request headers and user agent rotation
+- Manages HTTP headers and user agent rotation
 - Handles HTTP errors (404, 500, timeout, etc.)
 """
 

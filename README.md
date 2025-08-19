@@ -5,7 +5,7 @@ A Python web scraper designed to extract leaderboard data from the [Artificial A
 ## Features
  
 - Extracts leaderboard data from Artificial Analysis website, including dynamic content rendered by JavaScript using Playwright
-- Handles HTTP requests with retry mechanism and exponential backoff, and user-agent rotation
+- Handles fetching HTML content with retry mechanism and exponential backoff, and user-agent rotation
 - Parses HTML content using Beautiful Soup 4, including dynamic identification and extraction of table headers
 - Outputs data to CSV format with proper error handling and data validation using Pandera
 - Comprehensive logging for debugging and monitoring
@@ -84,8 +84,8 @@ output_csv_path: "data/leaderboard.csv"
 ## Components
  
 ### Scraper (`src/components/scraper.py`)
-Handles HTTP communication with the target website, specifically designed for dynamic content:
-- Makes GET requests to the leaderboard URL using Playwright for JavaScript rendering
+Handles fetching HTML content from the target website, specifically designed for dynamic content:
+- Fetches HTML content from the leaderboard URL using Playwright for JavaScript rendering
 - Implements retry logic with exponential backoff and user-agent rotation
 - Handles HTTP errors and timeouts
 - Provides real-time feedback with a terminal spinner during Playwright execution
@@ -142,7 +142,6 @@ The spinner displays the following status messages during execution:
 
 ## Dependencies
 
-- requests: HTTP library for Python
 - beautifulsoup4: HTML parsing library
 - pyyaml: YAML parser and emitter for Python
 - playwright: For rendering JavaScript-heavy pages
