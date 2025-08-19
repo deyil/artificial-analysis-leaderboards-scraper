@@ -33,6 +33,7 @@ artificialanalysis-scraper/
 │   └── test_scraper_spinner.py
 ├── config.yaml             # Configuration file
 ├── requirements.txt        # Python dependencies
+├── LICENSE                 # Project license information
 └── README.md               # Project documentation
 ```
 
@@ -151,7 +152,7 @@ The spinner displays the following status messages during execution:
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the GNU General Public License - see the [LICENSE](LICENSE) file for details.
 
 ## Contributing
 
