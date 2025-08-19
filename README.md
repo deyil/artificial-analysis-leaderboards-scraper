@@ -171,3 +171,6 @@ PYTHONPATH=. pytest tests/
 ```
 
 This will run all the unit tests in the `tests/` directory.
+
+## Note
+The reason for creating this scraper is that viewing and sorting tables directly on the Artificial Analysis website is not efficient. By exporting the data to a CSV file, users can easily sort and filter the scraped table data using their preferred spreadsheet application or data analysis tools.
