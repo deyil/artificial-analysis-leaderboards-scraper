@@ -14,7 +14,7 @@ A Python web scraper designed to extract leaderboard data from the [Artificial A
 ## Project Structure
  
 ```
-artificialanalysis-scraper/
+artificial-analysis-leaderboards-scraper/
 ├── src/
 │   ├── main.py             # Entry point script
 │   ├── components/
@@ -41,8 +41,8 @@ artificialanalysis-scraper/
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/your-username/artificialanalysis-scraper.git
-   cd artificialanalysis-scraper
+   git clone https://github.com/deyil/artificial-analysis-leaderboards-scraper.git
+   cd artificial-analysis-leaderboards-scraper
    ```
 
 2. Create a virtual environment (optional but recommended):
