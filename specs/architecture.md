@@ -9,27 +9,24 @@ This document outlines the technical architecture for a Python web scraper desig
 ```
 artificialanalysis-scraper/
 ├── src/
-│   ├── __init__.py
-│   ├── scraper.py          # Core HTTP request handling
-│   ├── parser.py           # HTML parsing and data extraction
-│   ├── formatter.py        # Data formatting and CSV output
-│   ├── config.py           # Configuration settings
-│   └── logger.py           # Logging configuration
+│   ├── main.py             # Entry point script
+│   ├── components/
+│   │   ├── scraper.py      # Core HTTP request handling
+│   │   ├── parser.py       # HTML parsing and data extraction
+│   │   ├── formatter.py    # Data formatting and CSV output
+│   │   ├── config.py       # Configuration settings
+│   │   └── logger.py       # Logging configuration
 ├── specs/
 │   ├── architecture.md     # This document
-│   ├── requirements.md     # Project requirements
 │   └── tasks.md            # Implementation tasks
 ├── tests/
-│   ├── __init__.py
-│   ├── test_scraper.py
+│   ├── test_formatter.py
+│   ├── test_main.py
 │   ├── test_parser.py
-│   └── test_formatter.py
-├── data/
-│   └── output/             # CSV output directory
-├── logs/                   # Application logs
-├── main.py                 # Entry point script
-├── requirements.txt        # Python dependencies
+│   ├── test_scraper.py
+│   └── test_scraper_spinner.py
 ├── config.yaml             # Configuration file
+├── requirements.txt        # Python dependencies
 └── README.md               # Project documentation
 ```
 
@@ -46,13 +43,10 @@ artificialanalysis-scraper/
 - Supports session management for potential authentication
 - Implements rate limiting to respect website resources
 
-**Key Methods:**
+**Key Functions:**
 ```python
-class LeaderboardScraper:
-    def __init__(self, config)
-    def fetch_page(self, url: str) -> requests.Response
-    def handle_pagination(self, base_url: str) -> List[str]
-    def _retry_request(self, url: str, max_retries: int) -> requests.Response
+def fetch_html_with_playwright(url: str, click_header_buttons: bool = True) -> Optional[str]
+def fetch_html(url: str, retries: int = 3, delay: int = 5) -> Optional[str]
 ```
 
 ### 2. `parser.py` - HTML Parser and Data Extractor
@@ -66,16 +60,10 @@ class LeaderboardScraper:
 - Validates data integrity during extraction
 - Handles missing or malformed data gracefully
 
-**Key Methods:**
+**Key Functions:**
 ```python
-class LeaderboardParser:
-    def __init__(self, html_content: str)
-    def extract_table_headers(self) -> List[str]
-    def extract_table_rows(self) -> List[Dict[str, Any]]
-    def parse_provider_info(self, cell) -> Dict[str, str]
-    def parse_model_info(self, cell) -> str
-    def parse_metrics(self, cell) -> Union[str, int, float]
-    def _clean_text(self, text: str) -> str
+def extract_provider_name(cell) -> str
+def parse_leaderboard(html: str) -> List[List[str]]
 ```
 
 ### 3. `formatter.py` - Data Formatter and CSV Writer
@@ -89,14 +77,10 @@ class LeaderboardParser:
 - Implements data deduplication
 - Adds metadata (scrape timestamp, source URL)
 
-**Key Methods:**
+**Key Functions:**
 ```python
-class DataFormatter:
-    def __init__(self, config)
-    def format_leaderboard_data(self, raw_data: List[Dict]) -> pd.DataFrame
-    def write_to_csv(self, data: pd.DataFrame, filename: str) -> bool
-    def validate_data_integrity(self, data: pd.DataFrame) -> bool
-    def _normalize_data_types(self, data: pd.DataFrame) -> pd.DataFrame
+def format_data_as_csv(data: List[List[Any]]) -> str
+def write_to_csv(data: list[list[str]], file_path: str, add_timestamp: bool = True) -> None
 ```
 
 ### 4. `config.py` - Configuration Management
@@ -108,28 +92,9 @@ class DataFormatter:
 - Supports environment variable overrides
 - Validates configuration parameters
 
-**Configuration Parameters:**
+**Key Functions:**
 ```python
-CONFIG = {
-    'url': {
-        'base_url': 'https://artificialanalysis.ai/leaderboards/providers/prompt-options/single/medium_coding',
-        'params': {'deprecation': 'all'}
-    },
-    'scraping': {
-        'max_retries': 3,
-        'retry_delay': 1.0,
-        'timeout': 30,
-        'user_agent': 'ArtificialAnalysis-Scraper/1.0'
-    },
-    'output': {
-        'csv_filename': 'leaderboard_{timestamp}.csv',
-        'output_directory': 'data/output'
-    },
-    'logging': {
-        'level': 'INFO',
-        'log_file': 'logs/scraper.log'
-    }
-}
+def load_config(config_path: str = "config.yaml") -> Dict[Any, Any]
 ```
 
 ### 5. `logger.py` - Logging System
@@ -142,25 +107,30 @@ CONFIG = {
 - Error tracking and reporting
 - Performance metrics logging
 
-## Data Flow Architecture
 
+**Key Functions:**
+```python
+def setup_logger() -> logging.Logger
+```
+
+## Data Flow Architecture
 ```mermaid
 graph TD
-    A[main.py] --> B[scraper.py]
+    A[main.py] --> B[src/components/scraper.py]
     B --> C[HTTP Request]
     C --> D[Website Response]
-    D --> E[parser.py]
+    D --> E[src/components/parser.py]
     E --> F[Extract Table Data]
-    F --> G[formatter.py]
+    F --> G[src/components/formatter.py]
     G --> H[Format & Validate]
     H --> I[CSV Output]
     
-    B --> J[logger.py]
+    B --> J[src/components/logger.py]
     E --> J
     G --> J
     A --> J
     
-    K[config.py] --> A
+    K[src/components/config.py] --> A
     K --> B
     K --> E
     K --> G
@@ -201,42 +171,37 @@ graph TD
 
 Based on website analysis, the extracted data will include:
 
+The actual structure depends on the HTML table structure from the Artificial Analysis website.
+The parser dynamically extracts headers from the table, so the column structure may vary.
+However, typical columns include:
+
 | Column | Data Type | Description | Example |
-|--------|-----------|-------------|---------|
-| api_provider | String | Provider company name | "OpenAI", "Google", "Microsoft Azure" |
-| model_name | String | AI model name | "GPT-5 (high)", "Gemini 2.5 Pro", "o3" |
-| context_window | String | Context window size | "400k", "256k", "1m" |
-| intelligence_index | Integer | Performance score | 69, 68, 67 |
-| price | String | Pricing information | "$3.4", "$6.1", "$0.8" |
-| scrape_timestamp | DateTime | When data was scraped | "2024-01-15T10:30:00Z" |
-| source_url | String | Origin URL | Full leaderboard URL |
+--------|-----------|-------------|---------|
+| Provider | String | Provider company name extracted from logos | "Fireworks", "OpenAI" |
+| Model | String | AI model name | "gpt-oss-120B (high)", "Gemini 2.5 Pro" |
+| Context Window | String | Context window size | "131k", "256k" |
+| Performance Metrics | String | Various performance metrics | "69", "68" |
 
 ## Error Handling Strategy
 
 ### Network-Level Errors:
 - **Connection Timeout:** Implement retry with exponential backoff
 - **HTTP 4xx/5xx Errors:** Log error details and attempt alternative approaches
-- **Rate Limiting (429):** Respect retry-after headers and implement delays
-- **DNS Resolution:** Catch and log networking issues
+- **Playwright Errors:** Handle browser automation errors gracefully
 
 ### Parsing-Level Errors:
 - **HTML Structure Changes:** Implement flexible selectors and fallback parsing strategies
-- **Missing Data:** Handle gracefully with null/default values
-- **Data Type Mismatches:** Implement robust type coercion with validation
+- **Missing Data:** Handle gracefully with empty values
+- **Malformed Data:** Handle gracefully with appropriate defaults
 
 ### File I/O Errors:
 - **Permission Issues:** Check directory permissions and provide clear error messages
-- **Disk Space:** Monitor available space and handle gracefully
-- **File Locking:** Implement proper file handling with context managers
+- **File Creation Errors:** Handle gracefully with appropriate error messages
 
 ### Error Recovery Mechanisms:
-```python
-class ErrorHandler:
-    def handle_network_error(self, error: requests.RequestException) -> bool
-    def handle_parsing_error(self, error: Exception, context: str) -> Dict
-    def handle_io_error(self, error: IOError) -> bool
-    def generate_error_report(self) -> Dict[str, Any]
-```
+Errors are handled through Python exceptions and logging. Each component logs errors
+appropriately and returns None or empty values when operations fail, allowing
+the main application to handle failures gracefully.
 
 ## Logging Strategy
 
@@ -273,22 +238,25 @@ class ErrorHandler:
 [2024-01-15 10:30:02] [INFO] [formatter.py:67] Generated CSV: leaderboard_20240115_103002.csv (45 rows)
 ```
 
-## Pagination Handling Design
+## Terminal Spinner Feature
 
-While the current website appears to show all data on a single page, the architecture supports pagination:
+A terminal spinner has been implemented to provide real-time feedback during the Playwright rendering process.
+This feature uses the `rich` library to display a spinner in the terminal, indicating that the scraping process
+is in progress.
 
-### Detection Strategy:
-- Check for pagination controls (next/previous buttons, page numbers)
-- Monitor for dynamic content loading (AJAX requests)
-- Detect infinite scroll implementations
+### Implementation Details:
+- Uses `rich.console.Console` for terminal output
+- Displays status messages during different phases of Playwright execution
+- Updates status messages as the process progresses
+- Handles both success and error cases gracefully
 
-### Implementation Approach:
-```python
-class PaginationHandler:
-    def detect_pagination(self, soup: BeautifulSoup) -> bool
-    def extract_page_urls(self, base_url: str) -> List[str]
-    def handle_dynamic_loading(self, driver: webdriver) -> List[str]
-```
+### Status Messages:
+- "Rendering page with Playwright..."
+- "Launching browser..."
+- "Navigating to page..."
+- "Waiting for page to load..."
+- "Clicking headers..." (when header buttons are present)
+- "Extracting HTML..."
 
 ## Performance Considerations
 
@@ -325,16 +293,17 @@ class PaginationHandler:
 - Data parsing accuracy
 - Error handling scenarios
 - Configuration validation
+- Playwright integration tests
+- Spinner functionality tests
 
 ### Integration Tests:
 - End-to-end scraping workflow
 - CSV output validation
 - Error recovery mechanisms
-- Performance benchmarks
 
 ### Test Data:
 - Mock HTML responses for consistent testing
 - Edge case scenarios (malformed data, network issues)
-- Regression tests for website changes
+- Playwright mock objects for browser automation testing
 
 This architecture provides a robust, maintainable, and scalable foundation for scraping the Artificial Analysis leaderboard data while handling real-world challenges and potential future requirements.

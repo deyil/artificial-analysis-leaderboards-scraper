@@ -1,4 +1,3 @@
-import pytest
 from src.components import scraper
 
 
@@ -189,7 +188,9 @@ def test_spinner_skips_clicks_when_disabled(monkeypatch):
     mock_sync, page = make_mock_sync_playwright(expected_html, header_button_count=1)
     monkeypatch.setattr(scraper, "sync_playwright", mock_sync)
 
-    result = scraper.fetch_html_with_playwright("http://example.com", click_header_buttons=False)
+    result = scraper.fetch_html_with_playwright(
+        "http://example.com", click_header_buttons=False
+    )
 
     assert result == expected_html
 

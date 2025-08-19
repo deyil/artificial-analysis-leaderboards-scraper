@@ -11,23 +11,22 @@ Tests include:
 - Error handling for malformed HTML
 - Provider name extraction with alt text preference and filename fallback
 """
-
-import sys
 import os
+import sys
+from bs4 import BeautifulSoup
+
+from src.components.parser import extract_provider_name, parse_leaderboard
 
 # Add the src directory to the path so we can import from src.components
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
-
-from components.parser import parse_leaderboard, extract_provider_name
-from bs4 import BeautifulSoup
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 
 
 def test_extract_provider_name_with_alt_text():
     """Test provider name extraction when alt text is present."""
     html = '<td><img alt="Fireworks logo" src="/img/logos/fireworks.svg"></td>'
-    soup = BeautifulSoup(html, 'html.parser')
-    cell = soup.find('td')
-    
+    soup = BeautifulSoup(html, "html.parser")
+    cell = soup.find("td")
+
     result = extract_provider_name(cell)
     assert result == "Fireworks"
 
@@ -35,9 +34,9 @@ def test_extract_provider_name_with_alt_text():
 def test_extract_provider_name_with_alt_text_no_logo_suffix():
     """Test provider name extraction when alt text doesn't have 'logo' suffix."""
     html = '<td><img alt="OpenAI" src="/img/logos/openai_small.svg"></td>'
-    soup = BeautifulSoup(html, 'html.parser')
-    cell = soup.find('td')
-    
+    soup = BeautifulSoup(html, "html.parser")
+    cell = soup.find("td")
+
     result = extract_provider_name(cell)
     assert result == "OpenAI"
 
@@ -45,9 +44,9 @@ def test_extract_provider_name_with_alt_text_no_logo_suffix():
 def test_extract_provider_name_fallback_to_filename():
     """Test provider name extraction falls back to filename when alt is missing."""
     html = '<td><img src="/img/logos/fireworks.svg"></td>'
-    soup = BeautifulSoup(html, 'html.parser')
-    cell = soup.find('td')
-    
+    soup = BeautifulSoup(html, "html.parser")
+    cell = soup.find("td")
+
     result = extract_provider_name(cell)
     assert result == "fireworks"
 
@@ -55,9 +54,9 @@ def test_extract_provider_name_fallback_to_filename():
 def test_extract_provider_name_fallback_to_filename_no_extension():
     """Test provider name extraction removes file extension from filename."""
     html = '<td><img src="/img/logos/openai_small.svg"></td>'
-    soup = BeautifulSoup(html, 'html.parser')
-    cell = soup.find('td')
-    
+    soup = BeautifulSoup(html, "html.parser")
+    cell = soup.find("td")
+
     result = extract_provider_name(cell)
     assert result == "openai_small"
 
@@ -65,19 +64,19 @@ def test_extract_provider_name_fallback_to_filename_no_extension():
 def test_extract_provider_name_empty_alt_fallback_to_filename():
     """Test provider name extraction falls back to filename when alt is empty."""
     html = '<td><img alt="" src="/img/logos/fireworks.svg"></td>'
-    soup = BeautifulSoup(html, 'html.parser')
-    cell = soup.find('td')
-    
+    soup = BeautifulSoup(html, "html.parser")
+    cell = soup.find("td")
+
     result = extract_provider_name(cell)
     assert result == "fireworks"
 
 
 def test_extract_provider_name_no_img():
     """Test provider name extraction when no img element is present."""
-    html = '<td><div>Some content</div></td>'
-    soup = BeautifulSoup(html, 'html.parser')
-    cell = soup.find('td')
-    
+    html = "<td><div>Some content</div></td>"
+    soup = BeautifulSoup(html, "html.parser")
+    cell = soup.find("td")
+
     result = extract_provider_name(cell)
     assert result == ""
 
@@ -85,7 +84,7 @@ def test_extract_provider_name_no_img():
 def test_parse_leaderboard_with_sample_row():
     """Test parsing of a sample table row with provider logo."""
     # Using the sample HTML row provided in the task
-    html = '''
+    html = """
     <table>
         <tbody>
             <tr>
@@ -106,23 +105,24 @@ def test_parse_leaderboard_with_sample_row():
             </tr>
         </tbody>
     </table>
-    '''
-    
+    """
+
     result = parse_leaderboard(html)
-    
+
     # Should have 1 data row (no headers in this HTML)
     assert len(result) == 1
-    
+
     # Check that the first cell (provider name) is correctly extracted
     assert result[0][0] == "Fireworks"
-    
+
     # Check that other cells are extracted correctly
     assert result[0][1] == "gpt-oss-120B (high)"
     assert result[0][2] == "131k"
 
+
 def test_parse_leaderboard_with_thead_and_known_labels():
     """Test parsing with thead containing known header labels."""
-    html = '''
+    html = """
     <table>
         <thead>
             <tr>
@@ -141,10 +141,10 @@ def test_parse_leaderboard_with_thead_and_known_labels():
             </tr>
         </tbody>
     </table>
-    '''
-    
+    """
+
     result = parse_leaderboard(html)
-    
+
     # Should have headers and one data row
     assert len(result) == 2
     # Check headers were selected correctly
@@ -153,9 +153,10 @@ def test_parse_leaderboard_with_thead_and_known_labels():
     assert result[1][0] == "Fireworks"
     assert result[1][1] == "Model A"
 
+
 def test_parse_leaderboard_with_thead_no_labels_best_quality():
     """Test parsing with thead containing no known labels but best quality row."""
-    html = '''
+    html = """
     <table>
         <thead>
             <tr>
@@ -185,10 +186,10 @@ def test_parse_leaderboard_with_thead_no_labels_best_quality():
             </tr>
         </tbody>
     </table>
-    '''
-    
+    """
+
     result = parse_leaderboard(html)
-    
+
     # Should have headers and one data row
     assert len(result) == 2
     # The third row has more unique non-empty headers and should be chosen
@@ -197,9 +198,10 @@ def test_parse_leaderboard_with_thead_no_labels_best_quality():
     assert result[1][0] == "Fireworks"
     assert result[1][1] == "Model A"
 
+
 def test_parse_leaderboard_no_thead_fallback():
     """Test parsing with no thead, using first non-empty row as headers."""
-    html = '''
+    html = """
     <table>
         <tbody>
             <tr>
@@ -216,10 +218,10 @@ def test_parse_leaderboard_no_thead_fallback():
             </tr>
         </tbody>
     </table>
-    '''
-    
+    """
+
     result = parse_leaderboard(html)
-    
+
     # Should have headers (from first row) and one data row
     assert len(result) == 2
     # First row should be used as headers
@@ -228,9 +230,10 @@ def test_parse_leaderboard_no_thead_fallback():
     assert result[1][0] == "Fireworks"
     assert result[1][1] == "Model A"
 
+
 def test_parse_leaderboard_no_thead_empty_first_row_fallback():
     """Test parsing with no thead and empty first row, using first non-empty row as headers."""
-    html = '''
+    html = """
     <table>
         <tbody>
             <tr>
@@ -252,10 +255,10 @@ def test_parse_leaderboard_no_thead_empty_first_row_fallback():
             </tr>
         </tbody>
     </table>
-    '''
-    
+    """
+
     result = parse_leaderboard(html)
-    
+
     # Should have headers (from second row) and one data row
     assert len(result) == 2
     # Second row should be used as headers
@@ -264,9 +267,10 @@ def test_parse_leaderboard_no_thead_empty_first_row_fallback():
     assert result[1][0] == "Fireworks"
     assert result[1][1] == "Model A"
 
+
 def test_parse_leaderboard_no_headers_generate_placeholders():
     """Test parsing with no clear headers, generating placeholder column names."""
-    html = '''
+    html = """
     <table>
         <tbody>
             <tr>
@@ -283,10 +287,10 @@ def test_parse_leaderboard_no_headers_generate_placeholders():
             </tr>
         </tbody>
     </table>
-    '''
-    
+    """
+
     result = parse_leaderboard(html)
-    
+
     # Should have headers (generated) and one data row
     assert len(result) == 2
     # Headers should include placeholder for empty cell
@@ -295,4 +299,3 @@ def test_parse_leaderboard_no_headers_generate_placeholders():
     assert result[1][0] == "OpenAI"
     assert result[1][1] == "Value1"
     assert result[1][2] == "Value2"
-

@@ -87,6 +87,7 @@ Handles HTTP communication with the target website, specifically designed for dy
 - Makes GET requests to the leaderboard URL using Playwright for JavaScript rendering
 - Implements retry logic with exponential backoff and user-agent rotation
 - Handles HTTP errors and timeouts
+- Provides real-time feedback with a terminal spinner during Playwright execution
  
 ### Parser (`src/components/parser.py`)
 Parses HTML content and extracts structured data:
@@ -126,15 +127,26 @@ The scraper implements comprehensive error handling:
 - Parsing errors: Graceful handling of malformed data
 - File I/O errors: Proper error reporting and handling
 
-## Terminal Process Indicator
+## Terminal Spinner Feature
 
 A terminal spinner has been added to provide real-time feedback during the Playwright rendering process. This feature uses the `rich` library to display a spinner in the terminal, indicating that the scraping process is in progress.
+
+The spinner displays the following status messages during execution:
+- "Rendering page with Playwright..."
+- "Launching browser..."
+- "Navigating to page..."
+- "Waiting for page to load..."
+- "Clicking headers..." (when header buttons are present)
+- "Extracting HTML..."
 
 ## Dependencies
 
 - requests: HTTP library for Python
 - beautifulsoup4: HTML parsing library
 - pyyaml: YAML parser and emitter for Python
+- playwright: For rendering JavaScript-heavy pages
+- pandera: For data validation
+- pandas: For data manipulation
 - rich: For displaying the terminal spinner
 
 ## License
@@ -148,3 +160,13 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 3. Commit your changes
 4. Push to the branch
 5. Create a new Pull Request
+
+## Testing
+
+To run the tests for this project, use the following command:
+
+```bash
+PYTHONPATH=. pytest tests/
+```
+
+This will run all the unit tests in the `tests/` directory.
