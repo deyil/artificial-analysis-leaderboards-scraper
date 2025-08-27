@@ -4,3 +4,4 @@ playwright==1.40.0
 pandera==0.26.0
 pandas==2.2.2
 rich==13.4.2
+numpy>=1.24.4
