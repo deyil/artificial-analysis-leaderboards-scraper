@@ -31,6 +31,8 @@ def test_main_orchestration_calls_in_order():
                 "target_url": "https://example.com",
                 "output_csv_path": "/tmp/out.csv",
                 "output_add_timestamp": True,
+                "output_localize_numbers": True,
+                "output_locale": "el_GR",
             }
 
         mock_load_config.side_effect = _load_config
@@ -56,7 +58,13 @@ def test_main_orchestration_calls_in_order():
         )[1]
 
         # write_to_csv should be called last
-        def _write(data, path, add_timestamp=True):
+        def _write(
+            data,
+            path,
+            add_timestamp=True,
+            localize_numbers=True,
+            locale_name="el_GR",
+        ):
             seq("write_to_csv")
 
         mock_write_to_csv.side_effect = _write
@@ -81,7 +89,11 @@ def test_main_orchestration_calls_in_order():
     mock_fetch_html.assert_called_once_with("https://example.com")
     mock_parse_leaderboard.assert_called_once_with("<html>content</html>")
     mock_write_to_csv.assert_called_once_with(
-        [["Header1"], ["Row1"]], "/tmp/out.csv", add_timestamp=True
+        [["Header1"], ["Row1"]],
+        "/tmp/out.csv",
+        add_timestamp=True,
+        localize_numbers=True,
+        locale_name="el_GR",
     )
 
 
@@ -96,6 +108,8 @@ def test_main_can_disable_timestamped_output():
             "target_url": "https://example.com",
             "output_csv_path": "data/leaderboard.csv",
             "output_add_timestamp": False,
+            "output_localize_numbers": False,
+            "output_locale": "el_GR",
         }
         mock_fetch_html.return_value = "<html>content</html>"
         mock_parse_leaderboard.return_value = [["Header1"], ["Row1"]]
@@ -106,5 +120,9 @@ def test_main_can_disable_timestamped_output():
         main()
 
     mock_write_to_csv.assert_called_once_with(
-        [["Header1"], ["Row1"]], "data/leaderboard.csv", add_timestamp=False
+        [["Header1"], ["Row1"]],
+        "data/leaderboard.csv",
+        add_timestamp=False,
+        localize_numbers=False,
+        locale_name="el_GR",
     )

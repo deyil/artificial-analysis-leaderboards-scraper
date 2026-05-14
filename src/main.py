@@ -13,16 +13,19 @@ import os
 import sys
 import logging
 
-from components.config import load_config
-from components.formatter import write_to_csv
-from components.logger import setup_logger
-from components.parser import parse_leaderboard
-from components.scraper import fetch_html, fetch_html_with_playwright
-
-# Add the parent directory to sys.path so we can import from src.components
-# This allows the script to be run directly with `python src/main.py`
-# without requiring `python -m src.main` or installing the package
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+if __package__:
+    from .components.config import load_config
+    from .components.formatter import write_to_csv
+    from .components.logger import setup_logger
+    from .components.parser import parse_leaderboard
+    from .components.scraper import fetch_html, fetch_html_with_playwright
+else:
+    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+    from components.config import load_config
+    from components.formatter import write_to_csv
+    from components.logger import setup_logger
+    from components.parser import parse_leaderboard
+    from components.scraper import fetch_html, fetch_html_with_playwright
 
 
 def main() -> None:
@@ -75,6 +78,8 @@ def main() -> None:
         return
 
     add_timestamp = config.get("output_add_timestamp", True)
+    localize_numbers = config.get("output_localize_numbers", True)
+    output_locale = config.get("output_locale", "el_GR")
 
     # Diagnostic logging to trace filename path
     logger.debug(
@@ -82,7 +87,13 @@ def main() -> None:
     )
 
     try:
-        write_to_csv(leaderboard_data, output_path, add_timestamp=add_timestamp)
+        write_to_csv(
+            leaderboard_data,
+            output_path,
+            add_timestamp=add_timestamp,
+            localize_numbers=localize_numbers,
+            locale_name=output_locale,
+        )
         logger.info("Leaderboard scraping process completed successfully")
     except Exception as e:
         logger.error(f"Failed to write data to CSV: {e}")

@@ -17,11 +17,13 @@ import csv
 import logging
 import os
 import re
+from decimal import Decimal, InvalidOperation
 from datetime import datetime
 from typing import Any, List
 
 import pandas as pd
 import pandera.pandas as pa
+from babel.numbers import NumberFormatError, format_decimal
 from pandera.errors import SchemaError
 
 # Define the schema for leaderboard data validation
@@ -32,6 +34,47 @@ LEADERBOARD_SCHEMA = pa.DataFrameSchema(
     },
     strict=True,
 )
+
+DECIMAL_VALUE_PATTERN = re.compile(r"^-?\d+\.\d+$")
+
+
+def _localize_decimal_value(value: str, locale_name: str) -> str:
+    """Format simple decimal strings using the configured Babel locale."""
+    if not DECIMAL_VALUE_PATTERN.fullmatch(value.strip()):
+        return value
+
+    try:
+        number = Decimal(value)
+    except InvalidOperation:
+        return value
+
+    decimal_places = max(-number.as_tuple().exponent, 0)
+    pattern = "0"
+    if decimal_places:
+        pattern = f"{pattern}.{''.join('0' for _ in range(decimal_places))}"
+
+    try:
+        return format_decimal(
+            number,
+            format=pattern,
+            locale=locale_name,
+            decimal_quantization=False,
+            group_separator=False,
+        )
+    except (NumberFormatError, ValueError):
+        return value
+
+
+def _prepare_rows_for_output(
+    data: list[list[str]], localize_numbers: bool, locale_name: str
+) -> list[list[str]]:
+    if not localize_numbers:
+        return data
+
+    return [
+        [_localize_decimal_value(cell, locale_name) for cell in row]
+        for row in data
+    ]
 
 
 def format_data_as_csv(data: List[List[Any]]) -> str:
@@ -80,7 +123,11 @@ def format_data_as_csv(data: List[List[Any]]) -> str:
 
 
 def write_to_csv(
-    data: list[list[str]], file_path: str, add_timestamp: bool = True
+    data: list[list[str]],
+    file_path: str,
+    add_timestamp: bool = True,
+    localize_numbers: bool = True,
+    locale_name: str = "el_GR",
 ) -> None:
     """
     Write data to a CSV file with proper error handling and logging.
@@ -91,6 +138,8 @@ def write_to_csv(
         data: A list of lists containing the data to write. The first row should contain headers.
         file_path: The path where the CSV file should be created.
         add_timestamp: Whether to add a timestamp to the filename. Defaults to True.
+        localize_numbers: Whether to localize decimal-looking values before writing.
+        locale_name: Babel locale used for localized decimal output.
 
     Raises:
         IOError: If there's an issue writing to the file.
@@ -107,6 +156,8 @@ def write_to_csv(
     )
 
     try:
+        prepared_data = _prepare_rows_for_output(data, localize_numbers, locale_name)
+
         # Directory creation and path resolution moved inside try block
         if is_dir_like:
             dir_path = (
@@ -147,7 +198,7 @@ def write_to_csv(
 
         with open(file_path, "w", newline="", encoding="utf-8") as csvfile:
             writer = csv.writer(csvfile)
-            writer.writerows(data)
+            writer.writerows(prepared_data)
         logger.info(f"Successfully created CSV file at {file_path}")
     except IOError as e:
         logger.error(f"Error writing to CSV file {file_path}: {e}")

@@ -48,6 +48,10 @@ def load_config(config_path: str = "config.yaml") -> Dict[Any, Any]:
             config["output_add_timestamp"] = _parse_bool(
                 config.get("output_add_timestamp", True)
             )
+            config["output_localize_numbers"] = _parse_bool(
+                config.get("output_localize_numbers", True)
+            )
+            config["output_locale"] = config.get("output_locale") or "el_GR"
 
             # Check for environment variable overrides
             target_url_env = os.getenv("TARGET_URL")
@@ -72,6 +76,24 @@ def load_config(config_path: str = "config.yaml") -> Dict[Any, Any]:
                 logger.info(
                     "Overriding output_add_timestamp with environment variable: "
                     f"{config['output_add_timestamp']}"
+                )
+
+            output_localize_numbers_env = os.getenv("OUTPUT_LOCALIZE_NUMBERS")
+            if output_localize_numbers_env is not None:
+                config["output_localize_numbers"] = _parse_bool(
+                    output_localize_numbers_env
+                )
+                logger.info(
+                    "Overriding output_localize_numbers with environment variable: "
+                    f"{config['output_localize_numbers']}"
+                )
+
+            output_locale_env = os.getenv("OUTPUT_LOCALE")
+            if output_locale_env:
+                config["output_locale"] = output_locale_env
+                logger.info(
+                    "Overriding output_locale with environment variable: "
+                    f"{config['output_locale']}"
                 )
 
             # Validate required configuration keys

@@ -196,6 +196,46 @@ class TestFormatter(unittest.TestCase):
             self.assertIn("Name,Score,Rank", content)
             self.assertIn("Model A,85,1", content)
 
+    def test_write_to_csv_localizes_decimal_values_with_default_greek_locale(self):
+        test_data = [
+            ["Name", "Score", "Rank"],
+            ["Model A", "85.5", "1"],
+            ["Model B", "78.25", "2"],
+        ]
+
+        write_to_csv(
+            test_data,
+            self.test_csv_path,
+            add_timestamp=False,
+            localize_numbers=True,
+            locale_name="el_GR",
+        )
+
+        with open(self.test_csv_path, "r", encoding="utf-8") as f:
+            content = f.read()
+
+        self.assertIn('Model A,"85,5",1', content)
+        self.assertIn('Model B,"78,25",2', content)
+
+    def test_write_to_csv_can_leave_scraped_values_unchanged(self):
+        test_data = [
+            ["Name", "Score"],
+            ["Model A", "85.5"],
+        ]
+
+        write_to_csv(
+            test_data,
+            self.test_csv_path,
+            add_timestamp=False,
+            localize_numbers=False,
+            locale_name="el_GR",
+        )
+
+        with open(self.test_csv_path, "r", encoding="utf-8") as f:
+            content = f.read()
+
+        self.assertIn("Model A,85.5", content)
+
     def test_write_to_csv_empty_data(self):
         """Test write_to_csv with empty data."""
         empty_data = []

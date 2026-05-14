@@ -9,3 +9,11 @@ output_csv_path: "data/leaderboard.csv"
 
 # Whether to append a timestamp to the output filename.
 output_add_timestamp: true
+
+# Whether to localize decimal-looking numeric values before writing the CSV.
+# When false, scraped table values are written as-is.
+output_localize_numbers: true
+
+# Locale used to format decimal-looking numeric values in CSV output.
+# Default: Greek locale.
+output_locale: "el_GR"
