@@ -26,6 +26,7 @@ artificial-analysis-leaderboards-scraper/
 ├── specs/
 │   └── architecture.md     # Technical architecture document
 ├── tests/
+│   ├── test_config.py
 │   ├── test_formatter.py
 │   ├── test_main.py
 │   ├── test_parser.py
@@ -99,11 +100,15 @@ The scraper can be configured through the `config.yaml` file:
 target_url: "https://artificialanalysis.ai/leaderboards/providers/prompt-options/single/medium_coding?deprecation=all"
 output_csv_path: "data/leaderboard.csv"
 output_add_timestamp: true
+output_localize_numbers: true
+output_locale: "el_GR"
 ```
 
 - `target_url`: The URL of the leaderboard to scrape
 - `output_csv_path`: The path where the CSV output will be saved
 - `output_add_timestamp`: When `true`, appends `_YYYY-MM-DDTHH-MM-SS` to the filename; set it to `false` to write the exact path, such as `data/leaderboard.csv`
+- `output_localize_numbers`: When `true` (default), decimal-looking numeric values (e.g. `85.5`, `$11.25`) are formatted using the configured locale before writing to CSV. Set to `false` to write scraped values as-is. Can be overridden with the `OUTPUT_LOCALIZE_NUMBERS` environment variable.
+- `output_locale`: The Babel locale string used to format decimal values (default: `"el_GR"` for Greek). Can be overridden with the `OUTPUT_LOCALE` environment variable.
 
 ## Components
  
@@ -125,6 +130,7 @@ Formats extracted data and outputs to CSV:
 - Writes data to CSV files with proper error handling
 - Validates data integrity using Pandera schemas
 - Appends timestamp to output filenames in format _YYYY-MM-DDTHH-MM-SS unless `output_add_timestamp` is disabled
+- Optionally localizes decimal-looking numeric values (e.g. `85.5` → `85,5`) using Babel with a configurable locale
 
 ## GitHub Actions
 
@@ -181,6 +187,7 @@ The spinner displays the following status messages during execution:
 - pandera: For data validation
 - pandas: For data manipulation
 - rich: For displaying the terminal spinner
+- Babel: For locale-aware formatting of decimal numeric values
 
 ## License
 
@@ -193,16 +200,6 @@ This project is licensed under the GNU General Public License - see the [LICENSE
 3. Commit your changes
 4. Push to the branch
 5. Create a new Pull Request
-
-## Testing
-
-To run the tests for this project, use the following command:
-
-```bash
-PYTHONPATH=. pytest tests/
-```
-
-This will run all the unit tests in the `tests/` directory.
 
 ## Note
 The reason for creating this scraper is that viewing and sorting tables directly on the Artificial Analysis website is not efficient. By exporting the data to a CSV file, users can easily sort and filter the scraped table data using their preferred spreadsheet application or data analysis tools.

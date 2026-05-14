@@ -17,8 +17,7 @@ artificialanalysis-scraper/
 │   │   ├── config.py       # Configuration settings
 │   │   └── logger.py       # Logging configuration
 ├── specs/
-│   ├── architecture.md     # This document
-│   └── tasks.md            # Implementation tasks
+│   └── architecture.md     # This document
 ├── tests/
 │   ├── test_formatter.py
 │   ├── test_main.py
@@ -46,6 +45,7 @@ artificialanalysis-scraper/
 ```python
 def fetch_html_with_playwright(url: str, click_header_buttons: bool = True) -> Optional[str]
 def fetch_html(url: str, retries: int = 3, delay: int = 5) -> Optional[str]
+def _wait_for_leaderboard_content(page, logger: logging.Logger) -> None
 ```
 
 ### 2. `parser.py` - HTML Parser and Data Extractor
@@ -72,14 +72,13 @@ def parse_leaderboard(html: str) -> List[List[str]]
 - Normalizes data types and formats
 - Handles data cleaning and validation
 - Generates CSV files with proper headers
-- Supports different output formats (CSV, JSON)
-- Implements data deduplication
-- Adds metadata (scrape timestamp, source URL)
+- Optionally localizes decimal-looking numeric values using Babel with a configurable locale (e.g. `el_GR`)
 
 **Key Functions:**
 ```python
-def format_data_as_csv(data: List[List[Any]]) -> str
-def write_to_csv(data: list[list[str]], file_path: str, add_timestamp: bool = True) -> None
+def write_to_csv(data: list[list[str]], file_path: str, add_timestamp: bool = True, localize_numbers: bool = True, locale_name: str = "el_GR") -> None
+def _localize_decimal_value(value: str, locale_name: str) -> str
+def _prepare_rows_for_output(data: list[list[str]], localize_numbers: bool, locale_name: str) -> list[list[str]]
 ```
 
 ### 4. `config.py` - Configuration Management
@@ -232,9 +231,9 @@ the main application to handle failures gracefully.
 
 ### Log Format:
 ```
-[2024-01-15 10:30:00] [INFO] [scraper.py:45] Successfully fetched page: 200 OK (0.85s)
-[2024-01-15 10:30:01] [DEBUG] [parser.py:23] Extracted 45 table rows
-[2024-01-15 10:30:02] [INFO] [formatter.py:67] Generated CSV: leaderboard_20240115_103002.csv (45 rows)
+2024-01-15 10:30:00,123 - scraper - INFO - Successfully fetched page: 200 OK (0.85s)
+2024-01-15 10:30:01,456 - parser - DEBUG - Extracted 45 table rows
+2024-01-15 10:30:02,789 - formatter - INFO - Generated CSV: leaderboard_20240115_103002.csv (45 rows)
 ```
 
 ## Terminal Spinner Feature
