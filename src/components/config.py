@@ -18,6 +18,15 @@ from typing import Any, Dict
 import yaml
 
 
+def _parse_bool(value: Any) -> bool:
+    """Convert common config and environment values to a boolean."""
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, str):
+        return value.strip().lower() not in {"", "0", "false", "no", "off"}
+    return bool(value)
+
+
 def load_config(config_path: str = "config.yaml") -> Dict[Any, Any]:
     """
     Load configuration from a YAML file.
@@ -33,8 +42,12 @@ def load_config(config_path: str = "config.yaml") -> Dict[Any, Any]:
 
     try:
         with open(config_path, "r") as file:
-            config = yaml.safe_load(file)
+            config = yaml.safe_load(file) or {}
             logger.info(f"Configuration loaded successfully from {config_path}")
+
+            config["output_add_timestamp"] = _parse_bool(
+                config.get("output_add_timestamp", True)
+            )
 
             # Check for environment variable overrides
             target_url_env = os.getenv("TARGET_URL")
@@ -49,6 +62,16 @@ def load_config(config_path: str = "config.yaml") -> Dict[Any, Any]:
                 config["output_csv_path"] = output_path_env
                 logger.info(
                     f"Overriding output_csv_path with environment variable: {output_path_env}"
+                )
+
+            output_add_timestamp_env = os.getenv("OUTPUT_ADD_TIMESTAMP")
+            if output_add_timestamp_env is not None:
+                config["output_add_timestamp"] = _parse_bool(
+                    output_add_timestamp_env
+                )
+                logger.info(
+                    "Overriding output_add_timestamp with environment variable: "
+                    f"{config['output_add_timestamp']}"
                 )
 
             # Validate required configuration keys

@@ -76,10 +76,12 @@ The scraper can be configured through the `config.yaml` file:
 ```yaml
 target_url: "https://artificialanalysis.ai/leaderboards/providers/prompt-options/single/medium_coding?deprecation=all"
 output_csv_path: "data/leaderboard.csv"
+output_add_timestamp: true
 ```
 
 - `target_url`: The URL of the leaderboard to scrape
 - `output_csv_path`: The path where the CSV output will be saved
+- `output_add_timestamp`: When `true`, appends `_YYYY-MM-DDTHH-MM-SS` to the filename; set it to `false` to write the exact path, such as `data/leaderboard.csv`
 
 ## Components
  
@@ -100,7 +102,17 @@ Parses HTML content and extracts structured data:
 Formats extracted data and outputs to CSV:
 - Writes data to CSV files with proper error handling
 - Validates data integrity using Pandera schemas
-- Appends timestamp to output filenames in format _YYYY-MM-DDTHH-MM-SS
+- Appends timestamp to output filenames in format _YYYY-MM-DDTHH-MM-SS unless `output_add_timestamp` is disabled
+
+## GitHub Actions
+
+This repository includes a manual workflow at `.github/workflows/run-scraper.yml`.
+
+Trigger it from the Actions tab with `Run workflow` to:
+- install the scraper dependencies and Playwright browser
+- run the scraper in GitHub Actions
+- write the result to `data/leaderboard.csv`
+- commit and push the CSV back to the repository only when the file changed
  
 ### Config (`src/components/config.py`)
 Manages application configuration:

@@ -30,6 +30,7 @@ def test_main_orchestration_calls_in_order():
             return {
                 "target_url": "https://example.com",
                 "output_csv_path": "/tmp/out.csv",
+                "output_add_timestamp": True,
             }
 
         mock_load_config.side_effect = _load_config
@@ -55,7 +56,7 @@ def test_main_orchestration_calls_in_order():
         )[1]
 
         # write_to_csv should be called last
-        def _write(data, path):
+        def _write(data, path, add_timestamp=True):
             seq("write_to_csv")
 
         mock_write_to_csv.side_effect = _write
@@ -79,4 +80,31 @@ def test_main_orchestration_calls_in_order():
     mock_load_config.assert_called_once()
     mock_fetch_html.assert_called_once_with("https://example.com")
     mock_parse_leaderboard.assert_called_once_with("<html>content</html>")
-    mock_write_to_csv.assert_called_once_with([["Header1"], ["Row1"]], "/tmp/out.csv")
+    mock_write_to_csv.assert_called_once_with(
+        [["Header1"], ["Row1"]], "/tmp/out.csv", add_timestamp=True
+    )
+
+
+def test_main_can_disable_timestamped_output():
+    with patch("src.main.setup_logger"), patch("src.main.load_config") as mock_load_config, patch(
+        "src.main.fetch_html"
+    ) as mock_fetch_html, patch("src.main.parse_leaderboard") as mock_parse_leaderboard, patch(
+        "src.main.fetch_html_with_playwright"
+    ) as mock_fetch_playwright, patch("src.main.write_to_csv") as mock_write_to_csv:
+
+        mock_load_config.return_value = {
+            "target_url": "https://example.com",
+            "output_csv_path": "data/leaderboard.csv",
+            "output_add_timestamp": False,
+        }
+        mock_fetch_html.return_value = "<html>content</html>"
+        mock_parse_leaderboard.return_value = [["Header1"], ["Row1"]]
+        mock_fetch_playwright.return_value = None
+
+        from src.main import main
+
+        main()
+
+    mock_write_to_csv.assert_called_once_with(
+        [["Header1"], ["Row1"]], "data/leaderboard.csv", add_timestamp=False
+    )

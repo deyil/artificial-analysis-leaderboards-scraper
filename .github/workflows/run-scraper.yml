@@ -1,0 +1,67 @@
+name: Run Leaderboard Scraper
+
+on:
+  workflow_dispatch:
+    inputs:
+      target_url:
+        description: Optional Artificial Analysis leaderboard URL override
+        required: false
+        type: string
+      commit_message:
+        description: Commit message for leaderboard updates
+        required: false
+        default: "chore(data): update leaderboard.csv"
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  scrape:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install Python dependencies
+        run: pip install -r requirements.txt
+
+      - name: Install Playwright browser
+        run: python -m playwright install --with-deps chromium
+
+      - name: Run scraper
+        env:
+          INPUT_TARGET_URL: ${{ inputs.target_url }}
+          OUTPUT_PATH: data/leaderboard.csv
+          OUTPUT_ADD_TIMESTAMP: "false"
+        run: |
+          if [ -n "$INPUT_TARGET_URL" ]; then
+            export TARGET_URL="$INPUT_TARGET_URL"
+          fi
+
+          python src/main.py
+
+      - name: Commit updated leaderboard
+        env:
+          COMMIT_MESSAGE: ${{ inputs.commit_message }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/leaderboard.csv
+
+          if git diff --cached --quiet; then
+            echo "No leaderboard changes to commit."
+            exit 0
+          fi
+
+          git commit -m "$COMMIT_MESSAGE"
+          git push

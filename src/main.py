@@ -74,13 +74,15 @@ def main() -> None:
         logger.error("Output CSV path not found in configuration")
         return
 
+    add_timestamp = config.get("output_add_timestamp", True)
+
     # Diagnostic logging to trace filename path
     logger.debug(
         f"Configured output_csv_path={output_path!r}, exists={os.path.exists(output_path)}, is_dir={os.path.isdir(output_path)}"
     )
 
     try:
-        write_to_csv(leaderboard_data, output_path)
+        write_to_csv(leaderboard_data, output_path, add_timestamp=add_timestamp)
         logger.info("Leaderboard scraping process completed successfully")
     except Exception as e:
         logger.error(f"Failed to write data to CSV: {e}")

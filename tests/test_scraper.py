@@ -21,3 +21,18 @@ def test_playwright_retries():
         assert mock_playwright.call_count == 3
         assert result is not None
         assert "Success content" in result
+
+
+def test_playwright_backoff_sleeps_once_per_failed_attempt():
+    with patch(
+        "src.components.scraper.fetch_html_with_playwright",
+        side_effect=[
+            None,
+            None,
+            "<html><body>Success content</body></html>",
+        ],
+    ), patch("src.components.scraper.time.sleep") as mock_sleep:
+        result = fetch_html("https://example.com", retries=2, delay=5)
+
+    assert result is not None
+    assert [call.args[0] for call in mock_sleep.call_args_list] == [5, 10]

@@ -117,11 +117,6 @@ def fetch_html(url: str, retries: int = 3, delay: int = 5) -> Optional[str]:
     logger = logging.getLogger("web_scraper")
 
     for attempt in range(retries + 1):
-        # Implement rate-limiting with exponential backoff
-        if attempt > 0:
-            min_delay = 1
-            time.sleep(max(min_delay, delay * (2 ** (attempt - 1))))
-
         html = fetch_html_with_playwright(url)
         if html is not None:
             return html

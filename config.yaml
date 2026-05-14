@@ -6,3 +6,6 @@ target_url: "https://artificialanalysis.ai/leaderboards/providers/prompt-options
 
 # The path to save the scraped leaderboard data to.
 output_csv_path: "data/leaderboard.csv"
+
+# Whether to append a timestamp to the output filename.
+output_add_timestamp: true
