@@ -133,8 +133,7 @@ This repository includes a manual workflow at `.github/workflows/run-scraper.yml
 Trigger it from the Actions tab with `Run workflow` to:
 - install the scraper dependencies and Playwright browser
 - run the scraper in GitHub Actions
-- write the result to `data/leaderboard.csv`
-- commit and push the CSV back to the repository only when the file changed
+- upload `data/leaderboard.csv` as a workflow artifact for download from the run summary
  
 ### Config (`src/components/config.py`)
 Manages application configuration:
