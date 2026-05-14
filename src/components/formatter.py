@@ -35,16 +35,22 @@ LEADERBOARD_SCHEMA = pa.DataFrameSchema(
     strict=True,
 )
 
-DECIMAL_VALUE_PATTERN = re.compile(r"^-?\d+\.\d+$")
+CURRENCY_DECIMAL_PATTERN = re.compile(
+    r"^(?P<prefix>[^\d\-+]*)(?P<number>-?\d+\.\d+)(?P<suffix>[^\d]*)$"
+)
 
 
 def _localize_decimal_value(value: str, locale_name: str) -> str:
-    """Format simple decimal strings using the configured Babel locale."""
-    if not DECIMAL_VALUE_PATTERN.fullmatch(value.strip()):
+    """Format decimal strings using the configured Babel locale."""
+    stripped_value = value.strip()
+    match = CURRENCY_DECIMAL_PATTERN.fullmatch(stripped_value)
+    if not match:
         return value
 
+    number_text = match.group("number")
+
     try:
-        number = Decimal(value)
+        number = Decimal(number_text)
     except InvalidOperation:
         return value
 
@@ -54,13 +60,14 @@ def _localize_decimal_value(value: str, locale_name: str) -> str:
         pattern = f"{pattern}.{''.join('0' for _ in range(decimal_places))}"
 
     try:
-        return format_decimal(
+        localized_number = format_decimal(
             number,
             format=pattern,
             locale=locale_name,
             decimal_quantization=False,
             group_separator=False,
         )
+        return f"{match.group('prefix')}{localized_number}{match.group('suffix')}"
     except (NumberFormatError, ValueError):
         return value
 

@@ -62,13 +62,15 @@ class MockHeaderButtons:
 
 
 class MockPage:
-    def __init__(self, html, header_button_count=0):
+    def __init__(self, html, header_button_count=0, ready_selector=None):
         self._html = html
         self._header_buttons = MockHeaderButtons(header_button_count)
         self.headers_set = None
         self.url = None
         self.load_state = None
         self.timeout_waited = None
+        self.ready_selector = ready_selector
+        self.waited_selectors = []
 
     def set_extra_http_headers(self, headers):
         self.headers_set = headers
@@ -81,6 +83,12 @@ class MockPage:
 
     def wait_for_timeout(self, ms):
         self.timeout_waited = ms
+
+    def wait_for_selector(self, selector, timeout=None):
+        self.waited_selectors.append((selector, timeout))
+        if selector == self.ready_selector:
+            return True
+        raise TimeoutError(f"selector not found: {selector}")
 
     def locator(self, selector):
         # Return the mock header buttons object
@@ -126,12 +134,12 @@ class MockSyncPlaywrightCM:
         return False
 
 
-def make_mock_sync_playwright(html, header_button_count=0):
+def make_mock_sync_playwright(html, header_button_count=0, ready_selector=None):
     """
     Factory that returns a mock sync_playwright function and the underlying mock page.
     The returned function can be monkeypatched in place of scraper.sync_playwright.
     """
-    page = MockPage(html, header_button_count)
+    page = MockPage(html, header_button_count, ready_selector=ready_selector)
 
     def _mock_sync_playwright():
         return MockSyncPlaywrightCM(page)
@@ -148,7 +156,11 @@ def test_spinner_updates_and_returns_html(monkeypatch):
     monkeypatch.setattr(scraper, "console", dummy_console)
 
     expected_html = "<html><body>Test Page</body></html>"
-    mock_sync, page = make_mock_sync_playwright(expected_html, header_button_count=2)
+    mock_sync, page = make_mock_sync_playwright(
+        expected_html,
+        header_button_count=2,
+        ready_selector="text=API Provider",
+    )
     monkeypatch.setattr(scraper, "sync_playwright", mock_sync)
 
     result = scraper.fetch_html_with_playwright("http://example.com")
@@ -174,6 +186,7 @@ def test_spinner_updates_and_returns_html(monkeypatch):
     # Context manager enter/exit should have been invoked
     assert dummy_console.entered is True
     assert dummy_console.exited is True
+    assert page.waited_selectors[0] == ("text=API Provider", 15000)
 
 
 def test_spinner_skips_clicks_when_disabled(monkeypatch):
@@ -185,7 +198,11 @@ def test_spinner_skips_clicks_when_disabled(monkeypatch):
     monkeypatch.setattr(scraper, "console", dummy_console)
 
     expected_html = "<html><body>No Clicks</body></html>"
-    mock_sync, page = make_mock_sync_playwright(expected_html, header_button_count=1)
+    mock_sync, page = make_mock_sync_playwright(
+        expected_html,
+        header_button_count=1,
+        ready_selector="table",
+    )
     monkeypatch.setattr(scraper, "sync_playwright", mock_sync)
 
     result = scraper.fetch_html_with_playwright(
@@ -206,3 +223,25 @@ def test_spinner_skips_clicks_when_disabled(monkeypatch):
 
     assert dummy_console.entered is True
     assert dummy_console.exited is True
+
+
+def test_waits_through_multiple_selectors_until_leaderboard_marker_appears(monkeypatch):
+    dummy_console = DummyConsole()
+    monkeypatch.setattr(scraper, "console", dummy_console)
+
+    expected_html = "<html><body>Delayed leaderboard</body></html>"
+    mock_sync, page = make_mock_sync_playwright(
+        expected_html,
+        ready_selector="tbody",
+    )
+    monkeypatch.setattr(scraper, "sync_playwright", mock_sync)
+
+    result = scraper.fetch_html_with_playwright("http://example.com")
+
+    assert result == expected_html
+    assert [selector for selector, _ in page.waited_selectors] == [
+        "text=API Provider",
+        "table",
+        "thead",
+        "tbody",
+    ]

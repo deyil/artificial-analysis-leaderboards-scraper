@@ -21,6 +21,13 @@ from rich.console import Console
 
 console = Console()
 
+LEADERBOARD_READY_SELECTORS = [
+    "text=API Provider",
+    "table",
+    "thead",
+    "tbody",
+]
+
 
 class PlaywrightBrowserMissingError(RuntimeError):
     """Raised when the Playwright browser binary is not installed locally."""
@@ -39,6 +46,23 @@ def _is_missing_browser_error(exc: Exception) -> bool:
     """Return True when Playwright is installed but its browser binary is missing."""
     message = str(exc)
     return "Executable doesn't exist" in message and "playwright install" in message
+
+
+def _wait_for_leaderboard_content(page, logger: logging.Logger) -> None:
+    """Wait briefly for a rendered leaderboard before extracting page HTML."""
+    wait_timeout_ms = 15000
+
+    for selector in LEADERBOARD_READY_SELECTORS:
+        try:
+            page.wait_for_selector(selector, timeout=wait_timeout_ms)
+            logger.info("Detected leaderboard content via selector: %s", selector)
+            return
+        except Exception:
+            continue
+
+    logger.warning(
+        "Timed out waiting for leaderboard-specific content; falling back to current DOM snapshot"
+    )
 
 
 def fetch_html_with_playwright(
@@ -71,6 +95,7 @@ def fetch_html_with_playwright(
                 status.update("Waiting for page to load...")
                 # Wait for the page to load completely
                 page.wait_for_load_state("networkidle")
+                _wait_for_leaderboard_content(page, logger)
 
                 if click_header_buttons:
                     status.update("Clicking headers...")

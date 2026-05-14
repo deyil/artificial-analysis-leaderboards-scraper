@@ -217,6 +217,25 @@ class TestFormatter(unittest.TestCase):
         self.assertIn('Model A,"85,5",1', content)
         self.assertIn('Model B,"78,25",2', content)
 
+    def test_write_to_csv_localizes_currency_prefixed_decimal_values(self):
+        test_data = [
+            ["Model", "Input Price", "Output Price"],
+            ["Model A", "$11.25", "$5.00"],
+        ]
+
+        write_to_csv(
+            test_data,
+            self.test_csv_path,
+            add_timestamp=False,
+            localize_numbers=True,
+            locale_name="el_GR",
+        )
+
+        with open(self.test_csv_path, "r", encoding="utf-8") as f:
+            content = f.read()
+
+        self.assertIn('Model A,"$11,25","$5,00"', content)
+
     def test_write_to_csv_can_leave_scraped_values_unchanged(self):
         test_data = [
             ["Name", "Score"],
