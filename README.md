@@ -56,11 +56,23 @@ artificial-analysis-leaderboards-scraper/
    pip install -r requirements.txt
    ```
 
+4. Install test dependencies when working locally:
+   ```bash
+   pip install -r requirements-dev.txt
+   ```
+
 ## Usage
 
 Run the scraper with:
 ```bash
 python src/main.py
+```
+
+## Testing
+
+Run the test suite with:
+```bash
+pytest -q
 ```
 
 The scraper will:
