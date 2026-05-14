@@ -1,0 +1,33 @@
+# Python-specific files and directories
+*.pyc
+*.pyo
+*.pyd
+__pycache__/
+*.egg-info/
+.pytest_cache/
+.venv/
+
+# Environment and configuration files
+.env
+.env.*
+
+# Build and distribution files
+dist/
+build/
+setup.cfg
+
+# IDE and editor files
+.vscode/
+.DS_Store
+
+# Database files
+*.sqlite3
+*.db
+
+# Log files
+logs/
+*.log
+
+# Other project-specific files
+data/
+tmp/
