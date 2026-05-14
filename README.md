@@ -56,7 +56,12 @@ artificial-analysis-leaderboards-scraper/
    pip install -r requirements.txt
    ```
 
-4. Install test dependencies when working locally:
+4. Install the Playwright browser used by the scraper:
+   ```bash
+   python -m playwright install chromium
+   ```
+
+5. Install test dependencies when working locally:
    ```bash
    pip install -r requirements-dev.txt
    ```
@@ -66,6 +71,11 @@ artificial-analysis-leaderboards-scraper/
 Run the scraper with:
 ```bash
 python src/main.py
+```
+
+If Playwright reports that the browser executable is missing, install it with:
+```bash
+python -m playwright install chromium
 ```
 
 ## Testing

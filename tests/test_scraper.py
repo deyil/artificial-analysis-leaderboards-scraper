@@ -1,6 +1,6 @@
 from unittest.mock import patch
 
-from src.components.scraper import fetch_html
+from src.components.scraper import PlaywrightBrowserMissingError, fetch_html
 
 
 def test_playwright_retries():
@@ -36,3 +36,15 @@ def test_playwright_backoff_sleeps_once_per_failed_attempt():
 
     assert result is not None
     assert [call.args[0] for call in mock_sleep.call_args_list] == [5, 10]
+
+
+def test_missing_playwright_browser_fails_without_retrying():
+    with patch(
+        "src.components.scraper.fetch_html_with_playwright",
+        side_effect=PlaywrightBrowserMissingError("install required"),
+    ) as mock_playwright, patch("src.components.scraper.time.sleep") as mock_sleep:
+        result = fetch_html("https://example.com", retries=3, delay=5)
+
+    assert result is None
+    assert mock_playwright.call_count == 1
+    mock_sleep.assert_not_called()

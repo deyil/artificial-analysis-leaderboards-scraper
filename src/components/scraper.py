@@ -21,6 +21,10 @@ from rich.console import Console
 
 console = Console()
 
+
+class PlaywrightBrowserMissingError(RuntimeError):
+    """Raised when the Playwright browser binary is not installed locally."""
+
 # List of common User-Agent strings
 USER_AGENTS = [
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
@@ -29,6 +33,12 @@ USER_AGENTS = [
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:89.0) Gecko/20100101 Firefox/89.0",
     "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:89.0) Gecko/20100101 Firefox/89.0",
 ]
+
+
+def _is_missing_browser_error(exc: Exception) -> bool:
+    """Return True when Playwright is installed but its browser binary is missing."""
+    message = str(exc)
+    return "Executable doesn't exist" in message and "playwright install" in message
 
 
 def fetch_html_with_playwright(
@@ -98,6 +108,11 @@ def fetch_html_with_playwright(
                 logger.info(f"Successfully fetched HTML from {url} using Playwright")
                 return html
     except Exception as e:
+        if _is_missing_browser_error(e):
+            raise PlaywrightBrowserMissingError(
+                "Playwright is installed but no browser executable is available. "
+                "Run `python -m playwright install chromium` and retry."
+            ) from e
         logger.error(f"Failed to fetch HTML from {url} using Playwright: {e}")
         return None
 
@@ -117,7 +132,12 @@ def fetch_html(url: str, retries: int = 3, delay: int = 5) -> Optional[str]:
     logger = logging.getLogger("web_scraper")
 
     for attempt in range(retries + 1):
-        html = fetch_html_with_playwright(url)
+        try:
+            html = fetch_html_with_playwright(url)
+        except PlaywrightBrowserMissingError as exc:
+            logger.error(str(exc))
+            return None
+
         if html is not None:
             return html
 
